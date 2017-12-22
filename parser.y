@@ -164,6 +164,16 @@ vdeclarations: /*empty*/
   //driver.symbolTable.printSymbolData($2);
 }
 | vdeclarations PIDENTIFIER LBRACKET NUMBER RBRACKET
+{
+  if (driver.symbolTable.containsSymbol($2)){
+    stringstream errMessage;
+    errMessage << "Identifier " << $2 << " already exists";
+		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+  }
+	mpz_class size($4);
+  driver.symbolTable.addArraySymbol($2, size);
+  //driver.symbolTable.printSymbolData($2);
+}
 ;
 commands:
   commands command
@@ -193,6 +203,9 @@ command:
       errMessage << "Cannot assign value to iterator " << lhs.symbol << ".";
 			Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
   }
+	if (!lhs.isArray){
+		driver.symbolTable.initialize(lhs.symbol);
+	}
   Expression rhs = $3;
   // convert assignment to appropriate command
   $$ = CommandSet(Command(lhs, rhs));
@@ -263,6 +276,9 @@ DO commands ENDFOR
 }
 | READ identifier SEMICOLON
 {
+	if (!$2.isArray){
+		driver.symbolTable.initialize($2.symbol);
+	}
   $$ = CommandSet(Command(CommandType::Read, $2));
 }
 | WRITE value SEMICOLON
@@ -324,7 +340,15 @@ condition:
 ;
 value:
   NUMBER      { mpz_class number($1); $$ = Value(number); }
-| identifier  { $$ = Value($1); }
+| identifier
+{
+	if (!$1.isArray && !driver.symbolTable.isInitialized($1.symbol)){
+    stringstream errMessage;
+    errMessage << "Variable " << $1 << " was not initialized";
+		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+	}
+	$$ = Value($1);
+}
 ;
 identifier:
   PIDENTIFIER
@@ -333,11 +357,52 @@ identifier:
     stringstream errMessage;
     errMessage << "Variable " << $1 << " was not declared";
 		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
-  }
+  } else if (driver.symbolTable.isArray($1)){
+		stringstream errMessage;
+    errMessage << "Variable " << $1 << " is an array";
+		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+	}
   $$ = Identifier($1);
 }
 | PIDENTIFIER LBRACKET PIDENTIFIER RBRACKET
+{
+	if (!driver.symbolTable.containsSymbol($1)){
+		stringstream errMessage;
+		errMessage << "Variable " << $1 << " was not declared";
+		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+	} else if (!driver.symbolTable.containsSymbol($3)){
+		stringstream errMessage;
+		errMessage << "Variable " << $3 << " was not declared";
+		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+	}  else if (!driver.symbolTable.isArray($1)){
+		stringstream errMessage;
+		errMessage << "Variable " << $1 << " is not an array";
+		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+	} else if (driver.symbolTable.isArray($3)){
+		stringstream errMessage;
+		errMessage << "Variable " << $3 << " is an array";
+		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+	}
+	$$ = Identifier($1, $3);
+}
 | PIDENTIFIER LBRACKET NUMBER RBRACKET
+{
+	mpz_class index($3);
+	if (!driver.symbolTable.containsSymbol($1) && !driver.symbolTable.iteratorOnStack($1)){
+		stringstream errMessage;
+		errMessage << "Variable " << $1 << " was not declared";
+		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+	} else if (!driver.symbolTable.isArray($1)){
+		stringstream errMessage;
+		errMessage << "Variable " << $1 << " is not an array";
+		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+	} else if (index >= driver.symbolTable.getArraySize($1)){
+		stringstream errMessage;
+		errMessage << "Index " << $3 << " out of array bounds";
+		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+	}
+	$$ = Identifier($1, index);
+}
 ;
 %%
 

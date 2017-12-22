@@ -14,6 +14,7 @@ struct Symbol {
   mpz_class address;
   bool isArray;
   mpz_class arraySize;
+  bool initialized;
 };
 
 class SymbolTable {
@@ -47,6 +48,7 @@ public:
   std::string popIterator();
 
   mpz_class getSymbol(std::string symbol);
+  mpz_class getArrayAddress(std::string symbol);
   mpz_class getArraySize(std::string symbol);
   mpz_class getConstant(mpz_class constant);
 
@@ -58,6 +60,9 @@ public:
   bool containsIterator(std::string symbol);
   bool iteratorOnStack(std::string symbol);
 
+  void initialize(std::string symbol);
+
+  bool isInitialized(std::string symbol);
   bool isArray(std::string symbol);
 
   AssemblyCode constantCode(mpz_class numver);

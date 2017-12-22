@@ -16,7 +16,6 @@ int CompilerDriver::parse(){
 
 void CompilerDriver::compile(){
     symbolTable.allocateIterators();
-    symbolTable.allocateTempSymbols();
     for(auto symbol : symbolTable.getIterators()){
         symbolTable.printSymbolData(symbol);
     }
@@ -26,6 +25,7 @@ void CompilerDriver::compile(){
     // convert symbols and values to tri-address form
     //cout << programBlock;
     program.convertToTriAddress();
+    symbolTable.allocateTempSymbols();
     //cout << "POST CONVER" << endl;
     cerr << program;
     program.splitToBlocks();

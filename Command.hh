@@ -138,7 +138,7 @@ public:
   Command(CommandType cmd, Value);
   ~Command();
 
-  std::vector<Command> convertToTriAddress();
+  std::vector<Command> convertToTriAddress(SymbolTable* st);
   std::set<mpz_class> getConstants();
   std::string postCommandRegisterState();
   std::string preCommandRegisterState();

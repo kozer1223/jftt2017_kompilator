@@ -28,7 +28,18 @@ public:
     number = num;
     identifier = Identifier("");
   }
+
+  bool isIdentifier();
+  std::string getIdentifierSymbol();
 };
+
+inline bool Value::isIdentifier(){
+  return type == ValueType::VIdentifier;
+}
+
+inline std::string Value::getIdentifierSymbol(){
+  return identifier.symbol;
+}
 
 inline std::ostream& operator<<(std::ostream &strm, const Value &a) {
   if(a.type == ValueType::VIdentifier){

@@ -182,60 +182,67 @@ Command::Command(CommandType cmd, Value val){
 Command::~Command(){
 }
 
-std::vector<Command> Command::convertToTriAddress(){
+std::shared_ptr<IAddress> parseAddress(std::shared_ptr<IAddress> addr, std::vector<Command> & commands, SymbolTable* st){
+  if (addr != nullptr){
+    if (addr->isUnparsedIdentifier()){
+      // TODO: check for arrays
+      Identifier identifier = ((UnparsedIdentifier*)addr.get())->identifier;
+      if (identifier.isArray){
+        // arrays
+        std::string pointer = st->addTempSymbol();
+        auto pointerAddr = std::make_shared<AddrVariable>( pointer );
+        auto arrAddr = std::make_shared<AddrConstant>( st->getArrayAddress(identifier.symbol) );
+        std::shared_ptr<IAddress> offsetAddr;
+        if (identifier.indexType == IndexType::Variable){
+          offsetAddr = std::make_shared<AddrVariable>( identifier.symbolIndex );
+        } else if (identifier.indexType == IndexType::Number){
+          offsetAddr = std::make_shared<AddrConstant>( identifier.numberIndex );
+        }
+        Command initPointer = Command(CommandType::AssignAdd, pointerAddr, arrAddr, offsetAddr);
+        commands.push_back(initPointer);
+        return std::make_shared<AddrPointer>( pointer );
+      } else {
+        return std::make_shared<AddrVariable>( identifier.symbol );
+      }
+    } else if (addr->isUnparsedValue()){
+      Value val = ((UnparsedValue*)addr.get())->value;
+      if (val.type == ValueType::VIdentifier){
+        // TODO: check for arrays
+        Identifier identifier = val.identifier;
+        if (identifier.isArray){
+          // arrays
+          std::string pointer = st->addTempSymbol();
+          auto pointerAddr = std::make_shared<AddrVariable>( pointer );
+          auto arrAddr = std::make_shared<AddrConstant>( st->getArrayAddress(identifier.symbol) );
+          std::shared_ptr<IAddress> offsetAddr;
+          if (identifier.indexType == IndexType::Variable){
+            offsetAddr = std::make_shared<AddrVariable>( identifier.symbolIndex );
+          } else if (identifier.indexType == IndexType::Number){
+            offsetAddr = std::make_shared<AddrConstant>( identifier.numberIndex );
+          }
+          Command initPointer = Command(CommandType::AssignAdd, pointerAddr, arrAddr, offsetAddr);
+          commands.push_back(initPointer);
+          return std::make_shared<AddrPointer>( pointer );
+        } else {
+          return std::make_shared<AddrVariable>( identifier.symbol );
+        }
+      } else {
+        return std::make_shared<AddrConstant>( val.number );
+      }
+    }
+  }
+  return addr;
+}
+
+std::vector<Command> Command::convertToTriAddress(SymbolTable* st){
   std::vector<Command> newCommands;
   auto new_addr1 = addr1;
   auto new_addr2 = addr2;
   auto new_addr3 = addr3;
 
-  //std::cout << "I am " << *this << std::endl;
-  if (addr1 != nullptr){
-    //std::cout << "check if fix addr1" << std::endl;
-    if (addr1->isUnparsedIdentifier()){
-      // TODO: check for arrays
-      new_addr1 = std::make_shared<AddrVariable>( ((UnparsedIdentifier*)addr1.get())->identifier.symbol );;
-    } else if (addr1->isUnparsedValue()){
-      Value val = ((UnparsedValue*)addr1.get())->value;
-      if (val.type == ValueType::VIdentifier){
-        // TODO: check for arrays
-        new_addr1 = std::make_shared<AddrVariable>( val.identifier.symbol );
-      } else {
-        new_addr1 = std::make_shared<AddrConstant>( val.number );
-      }
-    }
-  }
-
-  if (addr2 != nullptr){
-    //std::cout << "check if fix addr2" << std::endl;
-    if (addr2->isUnparsedIdentifier()){
-      // TODO: check for arrays
-      new_addr2 = std::make_shared<AddrVariable>( ((UnparsedIdentifier*)addr2.get())->identifier.symbol );
-    } else if (addr2->isUnparsedValue()){
-      Value val = ((UnparsedValue*)addr2.get())->value;
-      if (val.type == ValueType::VIdentifier){
-        // TODO: check for arrays
-        new_addr2 = std::make_shared<AddrVariable>( val.identifier.symbol );
-      } else {
-        new_addr2 = std::make_shared<AddrConstant>( val.number );
-      }
-    }
-  }
-
-  if (addr3 != nullptr){
-    //std::cout << "check if fix addr3" << std::endl;
-    if (addr3->isUnparsedIdentifier()){
-      // TODO: check for arrays
-      new_addr3 = std::make_shared<AddrVariable>( ((UnparsedIdentifier*)addr3.get())->identifier.symbol );
-    } else if (addr3->isUnparsedValue()){
-      Value val = ((UnparsedValue*)addr3.get())->value;
-      if (val.type == ValueType::VIdentifier){
-        // TODO: check for arrays
-        new_addr3 = std::make_shared<AddrVariable>( val.identifier.symbol );
-      } else {
-        new_addr3 = std::make_shared<AddrConstant>( val.number );
-      }
-    }
-  }
+  new_addr1 = parseAddress(addr1, newCommands, st);
+  new_addr2 = parseAddress(addr2, newCommands, st);
+  new_addr3 = parseAddress(addr3, newCommands, st);
 
   Command replacementCmd = Command(command, new_addr1, new_addr2, new_addr3);
   newCommands.push_back(replacementCmd);

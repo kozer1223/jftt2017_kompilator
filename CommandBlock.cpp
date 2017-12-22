@@ -50,7 +50,7 @@ arrays are turned to appropriate pointers (AddrPointer)
 void CommandBlock::convertToTriAddress() {
   std::vector<Command> newCommands;
   for (auto & command : commands){
-    std::vector<Command> replacement = command.convertToTriAddress();
+    std::vector<Command> replacement = command.convertToTriAddress(globalSymbolTable);
     newCommands.insert(newCommands.end(), replacement.begin(), replacement.end());
   }
   commands = newCommands;
@@ -133,6 +133,19 @@ void CommandBlock::splitToBlocks(std::map<std::string, CommandBlock*>& labelMap)
   }
 }
 
+AsmInstruction normalizeInstruction(AsmInstruction in, IAddress* addr){
+  if (addr->isPointer()){
+    switch(in){
+      case AsmInstruction::Load: return AsmInstruction::LoadIndirect;
+      case AsmInstruction::Store: return AsmInstruction::StoreIndirect;
+      case AsmInstruction::Add: return AsmInstruction::AddIndirect;
+      case AsmInstruction::Sub: return AsmInstruction::SubIndirect;
+      default: return in;
+    }
+  }
+  return in;
+}
+
 AssemblyCode CommandBlock::getAssembly(){
   AssemblyCode code;
   for (auto label : labels){
@@ -141,6 +154,7 @@ AssemblyCode CommandBlock::getAssembly(){
   auto iter = commands.begin();
   std::string registerState = Register::UNDEFINED_REGISTER_STATE;
   mpz_class registerAddress = -1;
+  bool isPointer = false;
   while(iter != commands.end()){
     Command & cmd = (*iter);
     CommandType type = cmd.command;
@@ -149,32 +163,38 @@ AssemblyCode CommandBlock::getAssembly(){
     } else if (type == CommandType::Read){
       code.pushInstruction(AsmInstruction::Get);
       registerAddress = cmd.addr1.get()->getAddress(globalSymbolTable);
+      isPointer = cmd.addr1.get()->isPointer();
       //code.pushInstruction(AsmInstruction::Store, cmd.addr1.get()->getAddress(globalSymbolTable));
     } else if (type == CommandType::Write){
       // load only when necessary
       if (registerState != cmd.preCommandRegisterState()){
-        code.pushInstruction(AsmInstruction::Load, cmd.addr1.get()->getAddress(globalSymbolTable));
+        code.pushInstruction(normalizeInstruction(AsmInstruction::Load, cmd.addr1.get()), cmd.addr1.get()->getAddress(globalSymbolTable));
+        registerAddress = cmd.addr1.get()->getAddress(globalSymbolTable);
+        isPointer = cmd.addr1.get()->isPointer();
       }
       code.pushInstruction(AsmInstruction::Put);
     } else if (type == CommandType::Assign){
       if (registerState != cmd.preCommandRegisterState()){
-        code.pushInstruction(AsmInstruction::Load, cmd.addr2.get()->getAddress(globalSymbolTable));
+        code.pushInstruction(normalizeInstruction(AsmInstruction::Load, cmd.addr2.get()), cmd.addr2.get()->getAddress(globalSymbolTable));
       }
       registerAddress = cmd.addr1.get()->getAddress(globalSymbolTable);
+      isPointer = cmd.addr1.get()->isPointer();
       //code.pushInstruction(AsmInstruction::Store, cmd.addr1.get()->getAddress(globalSymbolTable));
     } else if (type == CommandType::AssignAdd){
       if (registerState != cmd.preCommandRegisterState()){
-        code.pushInstruction(AsmInstruction::Load, cmd.addr2.get()->getAddress(globalSymbolTable));
+        code.pushInstruction(normalizeInstruction(AsmInstruction::Load, cmd.addr2.get()), cmd.addr2.get()->getAddress(globalSymbolTable));
       }
-      code.pushInstruction(AsmInstruction::Add, cmd.addr3.get()->getAddress(globalSymbolTable));
+      code.pushInstruction(normalizeInstruction(AsmInstruction::Add, cmd.addr3.get()), cmd.addr3.get()->getAddress(globalSymbolTable));
       registerAddress = cmd.addr1.get()->getAddress(globalSymbolTable);
+      isPointer = cmd.addr1.get()->isPointer();
       //code.pushInstruction(AsmInstruction::Store, cmd.addr1.get()->getAddress(globalSymbolTable));
     } else if (type == CommandType::AssignSub){
       if (registerState != cmd.preCommandRegisterState()){
-        code.pushInstruction(AsmInstruction::Load, cmd.addr2.get()->getAddress(globalSymbolTable));
+        code.pushInstruction(normalizeInstruction(AsmInstruction::Load, cmd.addr2.get()), cmd.addr2.get()->getAddress(globalSymbolTable));
       }
-      code.pushInstruction(AsmInstruction::Sub, cmd.addr3.get()->getAddress(globalSymbolTable));
+      code.pushInstruction(normalizeInstruction(AsmInstruction::Sub, cmd.addr3.get()), cmd.addr3.get()->getAddress(globalSymbolTable));
       registerAddress = cmd.addr1.get()->getAddress(globalSymbolTable);
+      isPointer = cmd.addr1.get()->isPointer();
       //code.pushInstruction(AsmInstruction::Store, cmd.addr1.get()->getAddress(globalSymbolTable));
     } else if (type == CommandType::Jump){
       std::string lbl = ((AddrLabel*)(*iter).addr1.get())->label;
@@ -187,50 +207,66 @@ AssemblyCode CommandBlock::getAssembly(){
       code.pushInstruction(AsmInstruction::JumpOdd, lbl);
     } else if (type == CommandType::Increase){
       if (registerState != cmd.preCommandRegisterState()){
-        code.pushInstruction(AsmInstruction::Load, cmd.addr1.get()->getAddress(globalSymbolTable));
+        code.pushInstruction(normalizeInstruction(AsmInstruction::Load, cmd.addr1.get()), cmd.addr1.get()->getAddress(globalSymbolTable));
       }
       code.pushInstruction(AsmInstruction::Increase);
       registerAddress = cmd.addr1.get()->getAddress(globalSymbolTable);
+      isPointer = cmd.addr1.get()->isPointer();
       //code.pushInstruction(AsmInstruction::Store, cmd.addr1.get()->getAddress(globalSymbolTable));
     } else if (type == CommandType::Decrease){
       if (registerState != cmd.preCommandRegisterState()){
-        code.pushInstruction(AsmInstruction::Load, cmd.addr1.get()->getAddress(globalSymbolTable));
+        code.pushInstruction(normalizeInstruction(AsmInstruction::Load, cmd.addr1.get()), cmd.addr1.get()->getAddress(globalSymbolTable));
       }
       code.pushInstruction(AsmInstruction::Decrease);
       registerAddress = cmd.addr1.get()->getAddress(globalSymbolTable);
+      isPointer = cmd.addr1.get()->isPointer();
       //code.pushInstruction(AsmInstruction::Store, cmd.addr1.get()->getAddress(globalSymbolTable));
     } else if (type == CommandType::ShiftLeft){
       if (registerState != cmd.preCommandRegisterState()){
-        code.pushInstruction(AsmInstruction::Load, cmd.addr1.get()->getAddress(globalSymbolTable));
+        code.pushInstruction(normalizeInstruction(AsmInstruction::Load, cmd.addr1.get()), cmd.addr1.get()->getAddress(globalSymbolTable));
       }
       code.pushInstruction(AsmInstruction::ShiftLeft);
       registerAddress = cmd.addr1.get()->getAddress(globalSymbolTable);
+      isPointer = cmd.addr1.get()->isPointer();
       //code.pushInstruction(AsmInstruction::Store, cmd.addr1.get()->getAddress(globalSymbolTable));
     } else if (type == CommandType::ShiftRight){
       if (registerState != cmd.preCommandRegisterState()){
-        code.pushInstruction(AsmInstruction::Load, cmd.addr1.get()->getAddress(globalSymbolTable));
+        code.pushInstruction(normalizeInstruction(AsmInstruction::Load, cmd.addr1.get()), cmd.addr1.get()->getAddress(globalSymbolTable));
       }
       code.pushInstruction(AsmInstruction::ShiftRight);
       registerAddress = cmd.addr1.get()->getAddress(globalSymbolTable);
+      isPointer = cmd.addr1.get()->isPointer();
       //code.pushInstruction(AsmInstruction::Store, cmd.addr1.get()->getAddress(globalSymbolTable));
     }
     // add store instruction only when necessary (register needs to change)
     if (iter == commands.end()){
       //std::cerr << cmd << std::endl;
       if (registerAddress != -1){
-        code.pushInstruction(AsmInstruction::Store, registerAddress);
+        if (isPointer){
+          code.pushInstruction(AsmInstruction::StoreIndirect, registerAddress);
+        } else {
+          code.pushInstruction(AsmInstruction::Store, registerAddress);
+        }
       }
     } else if (cmd.postCommandRegisterState() != (*(std::next(iter))).preCommandRegisterState()){
       //std::cerr << cmd << std::endl;
       //std::cerr << cmd.postCommandRegisterState() << " -> " << (*(std::next(iter))).preCommandRegisterState() << std::endl;
       if (registerAddress != -1){
-        code.pushInstruction(AsmInstruction::Store, registerAddress);
+        if (isPointer){
+          code.pushInstruction(AsmInstruction::StoreIndirect, registerAddress);
+        } else {
+          code.pushInstruction(AsmInstruction::Store, registerAddress);
+        }
       }
     } else if (cmd.postCommandRegisterState() != (*(std::next(iter))).postCommandRegisterState()){
       //std::cerr << cmd << std::endl;
       //std::cerr << cmd.postCommandRegisterState() << " -> " << (*(std::next(iter))).postCommandRegisterState() << std::endl;
       if (registerAddress != -1){
-        code.pushInstruction(AsmInstruction::Store, registerAddress);
+        if (isPointer){
+          code.pushInstruction(AsmInstruction::StoreIndirect, registerAddress);
+        } else {
+          code.pushInstruction(AsmInstruction::Store, registerAddress);
+        }
       }
     } else {
       //std::cerr << cmd << std::endl;

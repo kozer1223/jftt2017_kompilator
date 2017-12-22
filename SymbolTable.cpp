@@ -12,6 +12,11 @@ void SymbolTable::allocateSymbols(){
   for (auto symbol : symbol_list) {
     struct Symbol& symbolData = symbol_map[symbol];
     symbolData.address = lastFreeAddress;
+    if (symbolData.isArray){
+      lastFreeAddress += symbolData.arraySize;
+      // array address constant
+      // addConstant(symbolData.address + 1);
+    }
     lastFreeAddress++;
   }
 }
@@ -49,6 +54,24 @@ bool SymbolTable::addSymbol(std::string symbol){
   symbolData.address = -1;
   symbolData.isArray = false;
   symbolData.arraySize = 0;
+  symbolData.initialized = false;
+
+  symbol_map[symbol] = symbolData;
+  symbol_list.push_back(symbol);
+
+  return true;
+}
+
+bool SymbolTable::addArraySymbol(std::string symbol, mpz_class size){
+  if (containsSymbol(symbol) || size <= 0){
+    return false;
+  }
+  struct Symbol symbolData;
+  symbolData.name = symbol;
+  symbolData.address = -1;
+  symbolData.isArray = true;
+  symbolData.arraySize = size;
+  symbolData.initialized = false;
 
   symbol_map[symbol] = symbolData;
   symbol_list.push_back(symbol);
@@ -62,12 +85,13 @@ bool SymbolTable::addConstant(mpz_class constant){
   }
   struct Symbol symbolData;
   std::stringstream ss;
-  ss << "const_";
+  ss << "CONST_";
   ss << constant;
   symbolData.name = ss.str();
   symbolData.address = -1;
   symbolData.isArray = false;
   symbolData.arraySize = 0;
+  symbolData.initialized = true;
 
   constants_map[constant] = symbolData;
   constants.insert(constant);
@@ -94,6 +118,7 @@ std::string SymbolTable::addTempSymbol(){
   symbolData.address = -1;
   symbolData.isArray = false;
   symbolData.arraySize = 0;
+  symbolData.initialized = true;
 
   symbol_map[symbol] = symbolData;
   temp_symbols.insert(symbol);
@@ -110,6 +135,7 @@ bool SymbolTable::pushIterator(std::string symbol){
   symbolData.address = -1;
   symbolData.isArray = false;
   symbolData.arraySize = 0;
+  symbolData.initialized = true;
 
   symbol_map[symbol] = symbolData;
   iterator_stack.push_back(symbol);
@@ -127,6 +153,14 @@ std::string SymbolTable::popIterator(){
 
 mpz_class SymbolTable::getSymbol(std::string symbol){
   return symbol_map[symbol].address;
+}
+
+mpz_class SymbolTable::getArrayAddress(std::string symbol){
+  return symbol_map[symbol].address + 1;
+}
+
+mpz_class SymbolTable::getArraySize(std::string symbol){
+  return symbol_map[symbol].arraySize;
 }
 
 mpz_class SymbolTable::getConstant(mpz_class constant){
@@ -164,9 +198,25 @@ bool SymbolTable::iteratorOnStack(std::string symbol){
   return false;
 }
 
+void SymbolTable::initialize(std::string symbol){
+  symbol_map[symbol].initialized = true;
+}
+
+bool SymbolTable::isInitialized(std::string symbol){
+  return symbol_map[symbol].initialized;
+}
+
+bool SymbolTable::isArray(std::string symbol){
+  return symbol_map[symbol].isArray;
+}
+
 void SymbolTable::printSymbolData(std::string symbol){
   struct Symbol symbolData = symbol_map[symbol];
-  std::cerr << symbolData.name << " " << symbolData.address << std::endl;
+  if (symbolData.isArray){
+    std::cerr << symbolData.name << "[" << symbolData.arraySize << "] " << symbolData.address << std::endl;
+  } else {
+    std::cerr << symbolData.name << " " << symbolData.address << std::endl;
+  }
 }
 
 AssemblyCode SymbolTable::constantCode(mpz_class number){
