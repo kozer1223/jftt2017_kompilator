@@ -16,9 +16,25 @@ void SymbolTable::allocateSymbols(){
   }
 }
 
+void SymbolTable::allocateTempSymbols(){
+  for (auto symbol : temp_symbols) {
+    struct Symbol& symbolData = symbol_map[symbol];
+    symbolData.address = lastFreeAddress;
+    lastFreeAddress++;
+  }
+}
+
 void SymbolTable::allocateIterators(){
   for (auto symbol : iterator_list) {
     struct Symbol& symbolData = symbol_map[symbol];
+    symbolData.address = lastFreeAddress;
+    lastFreeAddress++;
+  }
+}
+
+void SymbolTable::allocateConstants(){
+  for (auto constant : constants) {
+    struct Symbol& symbolData = constants_map[constant];
     symbolData.address = lastFreeAddress;
     lastFreeAddress++;
   }
@@ -37,6 +53,32 @@ bool SymbolTable::addSymbol(std::string symbol){
   symbol_map[symbol] = symbolData;
   symbol_list.push_back(symbol);
 
+  return true;
+}
+
+bool SymbolTable::addConstant(mpz_class constant){
+  if (containsConstant(constant)){
+    return false;
+  }
+  struct Symbol symbolData;
+  std::stringstream ss;
+  ss << "const_";
+  ss << constant;
+  symbolData.name = ss.str();
+  symbolData.address = -1;
+  symbolData.isArray = false;
+  symbolData.arraySize = 0;
+
+  constants_map[constant] = symbolData;
+  constants.insert(constant);
+
+  return true;
+}
+
+bool SymbolTable::addConstants(std::set<mpz_class> constants){
+  for(auto constant : constants){
+    addConstant(constant);
+  }
   return true;
 }
 
@@ -87,6 +129,10 @@ mpz_class SymbolTable::getSymbol(std::string symbol){
   return symbol_map[symbol].address;
 }
 
+mpz_class SymbolTable::getConstant(mpz_class constant){
+  return constants_map[constant].address;
+}
+
 std::vector<std::string> SymbolTable::getSymbols(){
   return symbol_list;
 }
@@ -102,6 +148,11 @@ bool SymbolTable::containsSymbol(std::string symbol){
   return false;
 }
 
+bool SymbolTable::containsConstant(mpz_class constant){
+  return constants.count(constant) == 1;
+}
+
+
 bool SymbolTable::containsIterator(std::string symbol){
   return iterator_list.count(symbol) == 1;
 }
@@ -115,5 +166,32 @@ bool SymbolTable::iteratorOnStack(std::string symbol){
 
 void SymbolTable::printSymbolData(std::string symbol){
   struct Symbol symbolData = symbol_map[symbol];
-  std::cout << symbolData.name << " " << symbolData.address << std::endl;
+  std::cerr << symbolData.name << " " << symbolData.address << std::endl;
+}
+
+AssemblyCode SymbolTable::constantCode(mpz_class number){
+  mpz_class addr = getConstant(number);
+  AssemblyCode code;
+  while (number > 0){
+    mpz_class remainder = number % 2;
+    if (remainder == 1){
+      code.pushToFront(AsmInstruction::Increase);
+    }
+    if (number > 1){
+      code.pushToFront(AsmInstruction::ShiftLeft);
+    }
+    number /= 2;
+  }
+  code.pushToFront(AsmInstruction::Zero);
+  code.pushInstruction(AsmInstruction::Store, addr);
+  return code;
+}
+
+AssemblyCode SymbolTable::generateConstantsCode(){
+  AssemblyCode code;
+  for(auto constant : constants){
+    AssemblyCode generated = constantCode(constant);
+    code.pushCode(generated);
+  }
+  return code;
 }

@@ -15,11 +15,12 @@ public:
   std::string symbolIndex;
   mpz_class numberIndex;
 
+  Identifier() {};
   Identifier(std::string symbol);
 };
 
-inline Identifier::Identifier(std::string symbol){
-  this->symbol = symbol;
+inline Identifier::Identifier(std::string s){
+  symbol = s;
   isArray = false;
 }
 

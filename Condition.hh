@@ -22,29 +22,23 @@ enum CondType {
 class Condition{
 public:
   CondType condition;
-  Value *lhs;
-  Value *rhs;
+  Value lhs;
+  Value rhs;
 
-  Condition(CondType, Value*, Value*);
+  Condition(): lhs(Value(0)), rhs(Value(0)) {}
+  Condition(CondType cond, Value l, Value r): lhs(l), rhs(r){
+    condition = cond;
+  }
   ~Condition();
 
-  std::vector<Command*> getCommandBlock(SymbolTable* st, LabelManager* lm, CommandBlock* trueBlock);
-  std::vector<Command*> getCommandBlock(SymbolTable* st, LabelManager* lm, CommandBlock* trueBlock, CommandBlock* falseBlock);
+  std::vector<Command> getCommandBlock(SymbolTable* st, LabelManager* lm, CommandBlock& trueBlock);
+  std::vector<Command> getCommandBlock(SymbolTable* st, LabelManager* lm, CommandBlock& trueBlock, CommandBlock& falseBlock);
 };
 
-inline Condition::Condition(CondType cond, Value *l, Value *r){
-  condition = cond;
-  lhs = l;
-  rhs = r;
-}
-
-inline Condition::~Condition(){
-  delete lhs;
-  delete rhs;
-}
+inline Condition::~Condition(){}
 
 inline std::ostream& operator<<(std::ostream &strm, const Condition &a) {
-  strm << *(a.lhs);
+  strm << a.lhs;
   switch(a.condition){
     case CondType::Equal : strm << " = "; break;
     case CondType::NotEqual : strm << " <> "; break;
@@ -53,7 +47,7 @@ inline std::ostream& operator<<(std::ostream &strm, const Condition &a) {
     case CondType::LessEqual : strm << " <= "; break;
     case CondType::GreaterEqual : strm << " >= "; break;
   }
-  strm << *(a.rhs);
+  strm << a.rhs;
   return strm;
 }
 

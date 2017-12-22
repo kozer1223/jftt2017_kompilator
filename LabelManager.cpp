@@ -6,6 +6,8 @@ LabelManager::LabelManager(){
   lastLabelIndex = 0;
 }
 
+LabelManager::~LabelManager(){}
+
 std::string LabelManager::nextLabel(std::string infix){
   std::stringstream ss;
   ss << "LABEL_";

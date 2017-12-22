@@ -7,6 +7,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include "AssemblyCode.hh"
 
 struct Symbol {
   std::string name;
@@ -17,9 +18,11 @@ struct Symbol {
 
 class SymbolTable {
   std::map<std::string, Symbol> symbol_map;
+  std::map<mpz_class, Symbol> constants_map;
   std::vector<std::string> symbol_list;
   std::set<std::string> iterator_list;
   std::set<std::string> temp_symbols;
+  std::set<mpz_class> constants;
   std::vector<std::string> iterator_stack;
   mpz_class lastFreeAddress;
   long long int lastTempSymbol;
@@ -29,11 +32,14 @@ public:
   //~SymbolTable();
 
   void allocateSymbols();
+  void allocateTempSymbols();
   void allocateIterators();
+  void allocateConstants();
 
   bool addSymbol(std::string symbol);
   bool addArraySymbol(std::string symbol, mpz_class size);
   bool addConstant(mpz_class constant);
+  bool addConstants(std::set<mpz_class>);
 
   std::string addTempSymbol();
 
@@ -53,6 +59,9 @@ public:
   bool iteratorOnStack(std::string symbol);
 
   bool isArray(std::string symbol);
+
+  AssemblyCode constantCode(mpz_class numver);
+  AssemblyCode generateConstantsCode();
 
   // debug
   void printSymbolData(std::string symbol);

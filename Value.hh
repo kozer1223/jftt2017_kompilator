@@ -15,40 +15,26 @@ enum ValueType{
 class Value{
 public:
   ValueType type;
-  union{
-    Identifier* identifier;
-    mpz_class* number;
-  } value;
+  Identifier identifier;
+  mpz_class number;
 
-  Value(Identifier*);
-  Value(mpz_class);
-  ~Value();
-};
-
-inline Value::Value(Identifier* id){
-  type = ValueType::VIdentifier;
-  value.identifier = id;
-}
-
-inline Value::Value(mpz_class num){
-  type = ValueType::VConstant;
-  mpz_class* number = new mpz_class(num);
-  value.number = number;
-}
-
-inline Value::~Value(){
-  if(type == ValueType::VIdentifier){
-    delete value.identifier;
-  } else if (type == ValueType::VConstant){
-    delete value.number;
+  Value(): identifier(Identifier("")) {};
+  Value(Identifier i): identifier(i){
+    type = ValueType::VIdentifier;
+    identifier = i;
   }
-}
+  Value(mpz_class num): identifier(Identifier("")){
+    type = ValueType::VConstant;
+    number = num;
+    identifier = Identifier("");
+  }
+};
 
 inline std::ostream& operator<<(std::ostream &strm, const Value &a) {
   if(a.type == ValueType::VIdentifier){
-    return strm << a.value.identifier->symbol;
+    return strm << a.identifier.symbol;
   } else if (a.type == ValueType::VConstant){
-    return strm << "CONST(" << *(a.value.number) << ")";
+    return strm << "CONST(" << a.number << ")";
   }
   return strm;
 }

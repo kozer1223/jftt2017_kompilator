@@ -4,7 +4,7 @@
 #include <ostream>
 #include "Value.hh"
 
-enum ExprOp {
+enum class ExprOp {
   Nop,
   Add,
   Sub,
@@ -16,28 +16,22 @@ enum ExprOp {
 class Expression{
 public:
   ExprOp operation;
-  Value *lhs;
-  Value *rhs;
+  Value lhs;
+  Value rhs;
 
-  Expression(ExprOp, Value*, Value*);
+  Expression(): lhs(Value(0)), rhs(Value(0)) {}
+  Expression(ExprOp op, Value l, Value r): lhs(l), rhs(r){
+    operation = op;
+  }
   ~Expression();
 };
 
 #include <iostream>
 
-inline Expression::Expression(ExprOp op, Value *l, Value *r){
-  operation = op;
-  lhs = l;
-  rhs = r;
-}
-
-inline Expression::~Expression(){
-  delete lhs;
-  delete rhs;
-}
+inline Expression::~Expression(){}
 
 inline std::ostream& operator<<(std::ostream &strm, const Expression &a) {
-  strm << *(a.lhs);
+  strm << a.lhs;
   if (a.operation != ExprOp::Nop) {
     switch(a.operation){
       case ExprOp::Add : strm << " + "; break;
@@ -45,8 +39,10 @@ inline std::ostream& operator<<(std::ostream &strm, const Expression &a) {
       case ExprOp::Mul : strm << " * "; break;
       case ExprOp::Div : strm << " / "; break;
       case ExprOp::Mod : strm << " % "; break;
+      case ExprOp::Nop : break;
+      default: break;
     }
-    strm << *(a.rhs);
+    strm << a.rhs;
   }
   return strm;
 }
