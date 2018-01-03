@@ -146,7 +146,235 @@ AsmInstruction normalizeInstruction(AsmInstruction in, IAddress* addr){
   return in;
 }
 
-AssemblyCode CommandBlock::getAssembly(){
+AssemblyCode CommandBlock::generateMultiplication(IAddress* target, IAddress* op1, IAddress* op2, LabelManager* labelManager){
+  AssemblyCode code;
+  // load operands to temp variables and put 0 in target variable
+  //code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op1), op1->getAddress(globalSymbolTable));
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
+  if (op1->getAddress(globalSymbolTable) != op2->getAddress(globalSymbolTable)){
+    code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op2), op2->getAddress(globalSymbolTable));
+  }
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP2);
+  code.pushInstruction(AsmInstruction::Zero);
+  code.pushInstruction(normalizeInstruction(AsmInstruction::Store, target), target->getAddress(globalSymbolTable));
+  // labels
+  std::string loopLabel = labelManager->nextLabel("mul_loop");
+  std::string oddLabel = labelManager->nextLabel("mul_ifodd");
+  std::string endLabel = labelManager->nextLabel("mul_end");
+  // main loop
+  code.pushLabel(loopLabel);
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MUL_TEMP1);
+  code.pushInstruction(AsmInstruction::JumpOdd, oddLabel);
+  // if even
+  code.pushInstruction(AsmInstruction::JumpZero, endLabel);
+  code.pushInstruction(AsmInstruction::ShiftRight);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MUL_TEMP2);
+  code.pushInstruction(AsmInstruction::ShiftLeft);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP2);
+  code.pushInstruction(AsmInstruction::Jump, loopLabel);
+  // if odd
+  code.pushLabel(oddLabel);
+  code.pushInstruction(normalizeInstruction(AsmInstruction::Load, target), target->getAddress(globalSymbolTable));
+  code.pushInstruction(AsmInstruction::Add, globalSymbolTable->MUL_TEMP2);
+  code.pushInstruction(normalizeInstruction(AsmInstruction::Store, target), target->getAddress(globalSymbolTable));
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MUL_TEMP1);
+  code.pushInstruction(AsmInstruction::ShiftRight);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MUL_TEMP2);
+  code.pushInstruction(AsmInstruction::ShiftLeft);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP2);
+  code.pushInstruction(AsmInstruction::Jump, loopLabel);
+  // end
+  code.pushLabel(endLabel);
+
+  return code;
+}
+
+AssemblyCode CommandBlock::generateDivision(IAddress* target, IAddress* op1, IAddress* op2, LabelManager* labelManager){
+  AssemblyCode code;
+  // target = quotient
+  // labels
+  std::string shiftLoopLabel = labelManager->nextLabel("div_shiftloop");
+  std::string shiftEndLabel = labelManager->nextLabel("div_shiftend");
+  std::string rbiggerLabel = labelManager->nextLabel("div_rbigger");
+  std::string loopLabel = labelManager->nextLabel("div_loop");
+  std::string endLabel = labelManager->nextLabel("div_end");
+  std::string zeroLabel = labelManager->nextLabel("div_zero");
+  bool workOnCopy = (target->getAddress(globalSymbolTable) == op1->getAddress(globalSymbolTable)
+                  || target->getAddress(globalSymbolTable) == op2->getAddress(globalSymbolTable));
+  // initialize variables
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_REMAINDER);
+  code.pushInstruction(AsmInstruction::Zero);
+  if (workOnCopy){
+    code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_COPY);
+  } else {
+    code.pushInstruction(normalizeInstruction(AsmInstruction::Store, target), target->getAddress(globalSymbolTable));
+  }
+  code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op2), op2->getAddress(globalSymbolTable));
+  // division by 0 returns 0
+  code.pushInstruction(AsmInstruction::JumpZero, zeroLabel);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
+  // shift temp block
+  code.pushLabel(shiftLoopLabel);
+  code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op1), op1->getAddress(globalSymbolTable));
+  code.pushInstruction(AsmInstruction::Sub, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::JumpZero, loopLabel);
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::ShiftLeft);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::Jump, shiftLoopLabel);
+  // special case when division by 0
+  code.pushLabel(zeroLabel);
+  code.pushInstruction(AsmInstruction::Zero);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_REMAINDER);
+  code.pushInstruction(AsmInstruction::Jump, endLabel);
+  // main loop
+  code.pushLabel(loopLabel);
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::Increase);
+  code.pushInstruction(normalizeInstruction(AsmInstruction::Sub, op2), op2->getAddress(globalSymbolTable));
+  // end when temp < b  <=>  temp + 1 <= b
+  code.pushInstruction(AsmInstruction::JumpZero, endLabel);
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::Sub, globalSymbolTable->DIV_REMAINDER);
+  // branch whenever remainder >= temp
+  code.pushInstruction(AsmInstruction::JumpZero, rbiggerLabel);
+  // if remainder < temp
+  if (workOnCopy){
+    code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_COPY);
+  } else {
+    code.pushInstruction(normalizeInstruction(AsmInstruction::Load, target), target->getAddress(globalSymbolTable));
+  }
+  code.pushInstruction(AsmInstruction::ShiftLeft);
+  if (workOnCopy){
+    code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_COPY);
+  } else {
+    code.pushInstruction(normalizeInstruction(AsmInstruction::Store, target), target->getAddress(globalSymbolTable));
+  }
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::ShiftRight);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::Jump, loopLabel);
+  // if remainder >= temp
+  code.pushLabel(rbiggerLabel);
+  if (workOnCopy){
+    code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_COPY);
+  } else {
+    code.pushInstruction(normalizeInstruction(AsmInstruction::Load, target), target->getAddress(globalSymbolTable));
+  }
+  code.pushInstruction(AsmInstruction::ShiftLeft);
+  code.pushInstruction(AsmInstruction::Increase);
+  if (workOnCopy){
+    code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_COPY);
+  } else {
+    code.pushInstruction(normalizeInstruction(AsmInstruction::Store, target), target->getAddress(globalSymbolTable));
+  }
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_REMAINDER);
+  code.pushInstruction(AsmInstruction::Sub, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_REMAINDER);
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::ShiftRight);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::Jump, loopLabel);
+  // end
+  code.pushLabel(endLabel);
+  if (workOnCopy) {
+    code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_COPY);
+    code.pushInstruction(normalizeInstruction(AsmInstruction::Store, target), target->getAddress(globalSymbolTable));
+  }
+
+  return code;
+}
+
+AssemblyCode CommandBlock::generateModulo(IAddress* target, IAddress* op1, IAddress* op2, LabelManager* labelManager){
+  AssemblyCode code;
+  // target = remainder
+  // labels
+  std::string shiftLoopLabel = labelManager->nextLabel("mod_shiftloop");
+  std::string shiftEndLabel = labelManager->nextLabel("mod_shiftend");
+  std::string rbiggerLabel = labelManager->nextLabel("mod_rbigger");
+  std::string loopLabel = labelManager->nextLabel("mod_loop");
+  std::string endLabel = labelManager->nextLabel("mod_end");
+  std::string zeroLabel = labelManager->nextLabel("mod_zero");
+  bool workOnCopy = (target->getAddress(globalSymbolTable) == op1->getAddress(globalSymbolTable)
+                  || target->getAddress(globalSymbolTable) == op2->getAddress(globalSymbolTable));
+  // initialize variables
+  if (workOnCopy){
+    code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_COPY);
+  } else {
+    code.pushInstruction(normalizeInstruction(AsmInstruction::Store, target), target->getAddress(globalSymbolTable));
+  }
+  code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op2), op2->getAddress(globalSymbolTable));
+  // remainder of division by 0 returns 0
+  code.pushInstruction(AsmInstruction::JumpZero, zeroLabel);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
+  // shift temp block
+  code.pushLabel(shiftLoopLabel);
+  code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op1), op1->getAddress(globalSymbolTable));
+  code.pushInstruction(AsmInstruction::Sub, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::JumpZero, loopLabel);
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::ShiftLeft);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::Jump, shiftLoopLabel);
+  // special case when division by 0
+  code.pushLabel(zeroLabel);
+  code.pushInstruction(AsmInstruction::Zero);
+  if (workOnCopy){
+    code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_COPY);
+  } else {
+    code.pushInstruction(normalizeInstruction(AsmInstruction::Store, target), target->getAddress(globalSymbolTable));
+  }
+  code.pushInstruction(AsmInstruction::Jump, endLabel);
+  // main loop
+  code.pushLabel(loopLabel);
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::Increase);
+  code.pushInstruction(normalizeInstruction(AsmInstruction::Sub, op2), op2->getAddress(globalSymbolTable));
+  // end when temp < b  <=>  temp + 1 <= b
+  code.pushInstruction(AsmInstruction::JumpZero, endLabel);
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_TEMP);
+  if (workOnCopy){
+    code.pushInstruction(AsmInstruction::Sub, globalSymbolTable->DIV_COPY);
+  } else {
+    code.pushInstruction(normalizeInstruction(AsmInstruction::Sub, target), target->getAddress(globalSymbolTable));
+  }
+  // branch whenever remainder >= temp
+  code.pushInstruction(AsmInstruction::JumpZero, rbiggerLabel);
+  // if remainder < temp
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::ShiftRight);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::Jump, loopLabel);
+  // if remainder >= temp
+  code.pushLabel(rbiggerLabel);
+  if (workOnCopy){
+    code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_COPY);
+  } else {
+    code.pushInstruction(normalizeInstruction(AsmInstruction::Load, target), target->getAddress(globalSymbolTable));
+  }
+  code.pushInstruction(AsmInstruction::Sub, globalSymbolTable->DIV_TEMP);
+  if (workOnCopy){
+    code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_COPY);
+  } else {
+    code.pushInstruction(normalizeInstruction(AsmInstruction::Store, target), target->getAddress(globalSymbolTable));
+  }
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::ShiftRight);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::Jump, loopLabel);
+  // end
+  code.pushLabel(endLabel);
+  if (workOnCopy) {
+    code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_COPY);
+    code.pushInstruction(normalizeInstruction(AsmInstruction::Store, target), target->getAddress(globalSymbolTable));
+  }
+
+  return code;
+}
+
+AssemblyCode CommandBlock::getAssembly(LabelManager* labelManager){
   AssemblyCode code;
   for (auto label : labels){
     code.addBlockLabel(label);
@@ -196,6 +424,33 @@ AssemblyCode CommandBlock::getAssembly(){
       registerAddress = cmd.addr1.get()->getAddress(globalSymbolTable);
       isPointer = cmd.addr1.get()->isPointer();
       //code.pushInstruction(AsmInstruction::Store, cmd.addr1.get()->getAddress(globalSymbolTable));
+    } else if (type == CommandType::AssignMul){
+      if (registerState != cmd.preCommandRegisterState()){
+        code.pushInstruction(normalizeInstruction(AsmInstruction::Load, cmd.addr2.get()), cmd.addr2.get()->getAddress(globalSymbolTable));
+      }
+      AssemblyCode mulBlock = generateMultiplication(cmd.addr1.get(), cmd.addr2.get(), cmd.addr3.get(), labelManager);
+      code.pushCode(mulBlock);
+
+      registerAddress = -1;//cmd.addr1.get()->getAddress(globalSymbolTable);
+      isPointer = false;//cmd.addr1.get()->isPointer();
+    } else if (type == CommandType::AssignDiv){
+      if (registerState != cmd.preCommandRegisterState()){
+        code.pushInstruction(normalizeInstruction(AsmInstruction::Load, cmd.addr2.get()), cmd.addr2.get()->getAddress(globalSymbolTable));
+      }
+      AssemblyCode divBlock = generateDivision(cmd.addr1.get(), cmd.addr2.get(), cmd.addr3.get(), labelManager);
+      code.pushCode(divBlock);
+
+      registerAddress = -1;//cmd.addr1.get()->getAddress(globalSymbolTable);
+      isPointer = false;//cmd.addr1.get()->isPointer();
+    } else if (type == CommandType::AssignMod){
+      if (registerState != cmd.preCommandRegisterState()){
+        code.pushInstruction(normalizeInstruction(AsmInstruction::Load, cmd.addr2.get()), cmd.addr2.get()->getAddress(globalSymbolTable));
+      }
+      AssemblyCode modBlock = generateModulo(cmd.addr1.get(), cmd.addr2.get(), cmd.addr3.get(), labelManager);
+      code.pushCode(modBlock);
+
+      registerAddress = -1;//cmd.addr1.get()->getAddress(globalSymbolTable);
+      isPointer = false;//cmd.addr1.get()->isPointer();
     } else if (type == CommandType::Jump){
       std::string lbl = ((AddrLabel*)(*iter).addr1.get())->label;
       code.pushInstruction(AsmInstruction::Jump, lbl);

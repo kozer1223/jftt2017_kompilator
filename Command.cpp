@@ -276,9 +276,9 @@ std::string Command::postCommandRegisterState(){
     case CommandType::Assign: return addr1->toStr();
     case CommandType::AssignAdd: return addr1->toStr();
     case CommandType::AssignSub: return addr1->toStr();
-    case CommandType::AssignMul: return addr1->toStr();
-    case CommandType::AssignDiv: return addr1->toStr();
-    case CommandType::AssignMod: return addr1->toStr();
+    case CommandType::AssignMul: return Register::UNDEFINED_REGISTER_STATE;
+    case CommandType::AssignDiv: return Register::UNDEFINED_REGISTER_STATE;
+    case CommandType::AssignMod: return Register::UNDEFINED_REGISTER_STATE;
     case CommandType::Increase: return addr1->toStr();
     case CommandType::Decrease: return addr1->toStr();
     case CommandType::ShiftLeft: return addr1->toStr();

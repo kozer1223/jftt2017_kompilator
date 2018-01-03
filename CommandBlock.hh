@@ -12,6 +12,7 @@
 #include "Command.hh"
 #include "CommandSet.hh"
 #include "SymbolTable.hh"
+#include "LabelManager.hh"
 #include "AssemblyCode.hh"
 
 class CommandBlock{
@@ -36,7 +37,10 @@ public:
   void convertToTriAddress();
   void splitToBlocks();
   void splitToBlocks(std::map<std::string, CommandBlock*>&);
-  AssemblyCode getAssembly();
+  AssemblyCode generateMultiplication(IAddress*, IAddress*, IAddress*, LabelManager*);
+  AssemblyCode generateDivision(IAddress*, IAddress*, IAddress*, LabelManager*);
+  AssemblyCode generateModulo(IAddress*, IAddress*, IAddress*, LabelManager*);
+  AssemblyCode getAssembly(LabelManager*);
   std::set<mpz_class> getConstants();
 };
 

@@ -26,7 +26,7 @@ void CompilerDriver::compile(){
     //cout << programBlock;
     program.convertToTriAddress();
     symbolTable.allocateTempSymbols();
-    //cout << "POST CONVER" << endl;
+    //cout << "POST CONVERT" << endl;
     cerr << program;
     program.splitToBlocks();
 
@@ -53,7 +53,7 @@ void CompilerDriver::compile(){
 		//}
 		//cout << endl;
 		//cout << *p << endl;
-		AssemblyCode block = p->getAssembly();
+		AssemblyCode block = p->getAssembly(&labelManager);
 		code.pushCode(block);
 		p = p->nextBlock.get();
 	}

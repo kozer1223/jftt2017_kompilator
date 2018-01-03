@@ -65,6 +65,7 @@ public:
   void pushInstruction(AsmInstruction, mpz_class);
   void pushInstruction(AsmInstruction, std::string);
   void addBlockLabel(std::string);
+  void pushLabel(std::string);
   void pushCode(AssemblyCode&);
   std::string toString();
 
@@ -104,6 +105,11 @@ inline void AssemblyCode::pushInstruction(AsmInstruction in, std::string label) 
 inline void AssemblyCode::addBlockLabel(std::string label){
   // add to beginning
   labelLines[label] = 0;
+}
+
+inline void AssemblyCode::pushLabel(std::string label){
+  // add to the end
+  labelLines[label] = instructionSet.size();
 }
 
 inline void AssemblyCode::pushCode(AssemblyCode& ac){

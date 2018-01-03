@@ -37,3 +37,50 @@ a++
 a--
 a*=2
 a/=2
+
+DIV/MOD
+
+LOAD a
+STORE r
+ZERO
+STORE q
+LOAD b
+JZERO endloop
+STORE t
+shiftt	LOAD a
+SUB t
+JZERO divloop
+LOAD t
+SHL
+STORE t
+JUMP shiftt
+divloop	LOAD t
+INC
+SUB b
+JZERO endloop
+LOAD t
+SUB r
+JZERO rbigger
+LOAD q
+SHL
+STORE q
+LOAD t
+SHR
+STORE t
+JUMP divloop
+rbigger	LOAD q
+SHL
+INC
+STORE q
+LOAD r
+SUB t
+STORE r
+LOAD t
+SHR
+STORE t
+JUMP divloop
+endloop LOAD q
+PUT
+LOAD r
+PUT
+HALT

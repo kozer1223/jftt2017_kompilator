@@ -29,6 +29,13 @@ class SymbolTable {
   long long int lastTempSymbol;
 
 public:
+  mpz_class MUL_TEMP1 = 1;
+  mpz_class MUL_TEMP2 = 2;
+  mpz_class DIV_TEMP = 3;
+  mpz_class DIV_REMAINDER = 4;
+  mpz_class DIV_COPY = 5;
+
+
   SymbolTable();
   //~SymbolTable();
 
