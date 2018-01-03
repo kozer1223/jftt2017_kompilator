@@ -84,3 +84,75 @@ PUT
 LOAD r
 PUT
 HALT
+
+ modulo
+
+ GET
+STORE b
+GET
+STORE c
+
+LOAD b
+STORE tmp
+ZERO
+STORE a
+INC
+STORE p
+LOAD tmp
+loop	JZERO end
+JODD ifodd
+LOAD p
+SHL
+STORE p
+INC
+SUB c
+JZERO skip1
+DEC
+STORE p
+skip1	LOAD tmp
+SHR
+STORE tmp
+JUMP loop
+ifodd	LOAD a
+ADD p
+STORE a
+INC
+SUB c
+JZERO skip2
+DEC
+STORE a
+skip2	LOAD p
+SHL
+STORE p
+INC
+SUB c
+JZERO skip3
+DEC
+STORE p
+skip3	LOAD tmp
+SHR
+STORE tmp
+JUMP loop
+end	LOAD a
+PUT
+HALT
+
+FOR UPTO
+
+i = a
+tmp = b + 1 - a
+while tmp > 0
+ (block)
+ i++
+ tmp--
+endwhile
+
+FOR DOWNTO
+
+i = a
+tmp = a + 1 - b  // tmp = a - (b-1)
+while tmp > 0
+ (block)
+ i--
+ tmp--
+endwhile

@@ -34,6 +34,7 @@ public:
   mpz_class DIV_TEMP = 3;
   mpz_class DIV_REMAINDER = 4;
   mpz_class DIV_COPY = 5;
+  mpz_class MOD_POWER = 6;
 
 
   SymbolTable();

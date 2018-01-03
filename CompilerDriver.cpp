@@ -59,3 +59,11 @@ void CompilerDriver::compile(){
 	}
 	cout << code.toString();
 }
+
+void CompilerDriver::setLocation(unsigned int location) {
+    cur_location += location;
+}
+
+unsigned int CompilerDriver::location() {
+    return cur_location;
+}

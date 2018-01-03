@@ -253,8 +253,54 @@ command:
 }
 DO commands ENDFOR
 {
+	std::vector<Command> preambleCommands;
+	std::vector<Command> conditionCommands;
+	//string iteratorIdentifier = $2;
+	// iterator = value1
+	auto c1addr1 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier($2)));
+	auto c1addr2 = std::shared_ptr<IAddress>(std::make_shared<UnparsedValue>($4));
+	Command c1 = Command(CommandType::Assign, c1addr1, c1addr2);
+	preambleCommands.push_back(c1);
+
+  // tmp = value2
+	std::string tempSymbol = driver.symbolTable.addTempSymbol();
+	auto c2addr1 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier(tempSymbol)));
+	auto c2addr2 = std::shared_ptr<IAddress>(std::make_shared<UnparsedValue>($6));
+	Command c2 = Command(CommandType::Assign, c2addr1, c2addr2);
+	preambleCommands.push_back(c2);
+
+ 	// tmp ++
+	auto c3addr1 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier(tempSymbol)));
+	Command c3 = Command(CommandType::Increase, c3addr1);
+	preambleCommands.push_back(c3);
+
+	// tmp = tmp - value1
+	auto c4addr1 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier(tempSymbol)));
+	auto c4addr2 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier(tempSymbol)));
+	auto c4addr3 = std::shared_ptr<IAddress>(std::make_shared<UnparsedValue>($4));
+	Command c4 = Command(CommandType::AssignSub, c4addr1, c4addr2, c4addr3);
+	preambleCommands.push_back(c4);
+
+	Condition greater = Condition(CondType::Greater, Value(Identifier(tempSymbol)), Value((mpz_class)0));
+
+	// while block
+	string loopLabel = driver.labelManager.nextLabel("loop");
+
+	// i++
+	auto c5addr1 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier($2)));
+	$9.pushCommand(Command(CommandType::Increase, c5addr1));
+	// temp--
+	auto c6addr1 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier(tempSymbol)));
+	$9.pushCommand(Command(CommandType::Decrease, c6addr1));
+
+	$9.pushCommand(Command(CommandType::Jump, new AddrLabel(loopLabel)));
+  conditionCommands = greater.getCommandBlock(&driver.symbolTable, &driver.labelManager, $9);
+	conditionCommands.insert(conditionCommands.begin(), Command(CommandType::Label, new AddrLabel(loopLabel)));
+  //delete $2;
+	preambleCommands.insert(preambleCommands.end(), conditionCommands.begin(), conditionCommands.end());
+  $$ = CommandSet(preambleCommands);
+
   driver.symbolTable.popIterator();
-  //$$ = nullptr;
 }
 | FOR PIDENTIFIER FROM value DOWNTO value
 {
@@ -271,8 +317,54 @@ DO commands ENDFOR
 }
 DO commands ENDFOR
 {
+	std::vector<Command> preambleCommands;
+	std::vector<Command> conditionCommands;
+	//string iteratorIdentifier = $2;
+	// iterator = value1
+	auto c1addr1 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier($2)));
+	auto c1addr2 = std::shared_ptr<IAddress>(std::make_shared<UnparsedValue>($4));
+	Command c1 = Command(CommandType::Assign, c1addr1, c1addr2);
+	preambleCommands.push_back(c1);
+
+  // tmp = value1
+	std::string tempSymbol = driver.symbolTable.addTempSymbol();
+	auto c2addr1 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier(tempSymbol)));
+	auto c2addr2 = std::shared_ptr<IAddress>(std::make_shared<UnparsedValue>($4));
+	Command c2 = Command(CommandType::Assign, c2addr1, c2addr2);
+	preambleCommands.push_back(c2);
+
+ 	// tmp ++
+	auto c3addr1 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier(tempSymbol)));
+	Command c3 = Command(CommandType::Increase, c3addr1);
+	preambleCommands.push_back(c3);
+
+	// tmp = tmp - value2
+	auto c4addr1 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier(tempSymbol)));
+	auto c4addr2 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier(tempSymbol)));
+	auto c4addr3 = std::shared_ptr<IAddress>(std::make_shared<UnparsedValue>($6));
+	Command c4 = Command(CommandType::AssignSub, c4addr1, c4addr2, c4addr3);
+	preambleCommands.push_back(c4);
+
+	Condition greater = Condition(CondType::Greater, Value(Identifier(tempSymbol)), Value((mpz_class)0));
+
+	// while block
+	string loopLabel = driver.labelManager.nextLabel("loop");
+
+	// i--
+	auto c5addr1 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier($2)));
+	$9.pushCommand(Command(CommandType::Decrease, c5addr1));
+	// temp--
+	auto c6addr1 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier(tempSymbol)));
+	$9.pushCommand(Command(CommandType::Decrease, c6addr1));
+
+	$9.pushCommand(Command(CommandType::Jump, new AddrLabel(loopLabel)));
+  conditionCommands = greater.getCommandBlock(&driver.symbolTable, &driver.labelManager, $9);
+	conditionCommands.insert(conditionCommands.begin(), Command(CommandType::Label, new AddrLabel(loopLabel)));
+  //delete $2;
+	preambleCommands.insert(preambleCommands.end(), conditionCommands.begin(), conditionCommands.end());
+  $$ = CommandSet(preambleCommands);
+
   driver.symbolTable.popIterator();
-  //$$ = nullptr;
 }
 | READ identifier SEMICOLON
 {
@@ -370,7 +462,7 @@ identifier:
 		stringstream errMessage;
 		errMessage << "Variable " << $1 << " was not declared";
 		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
-	} else if (!driver.symbolTable.containsSymbol($3)){
+	} else if (!driver.symbolTable.containsSymbol($3) && !driver.symbolTable.iteratorOnStack($3)){
 		stringstream errMessage;
 		errMessage << "Variable " << $3 << " was not declared";
 		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
@@ -388,7 +480,7 @@ identifier:
 | PIDENTIFIER LBRACKET NUMBER RBRACKET
 {
 	mpz_class index($3);
-	if (!driver.symbolTable.containsSymbol($1) && !driver.symbolTable.iteratorOnStack($1)){
+	if (!driver.symbolTable.containsSymbol($1)){
 		stringstream errMessage;
 		errMessage << "Variable " << $1 << " was not declared";
 		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
@@ -407,5 +499,5 @@ identifier:
 %%
 
 void Compiler::Parser::error(const location &loc , const std::string &message) {
-	cout << "Error at " << loc << ":" << endl << message << endl;
+	cerr << "Error at " << driver.location() << ":" << endl << message << endl;
 }

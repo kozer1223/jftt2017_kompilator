@@ -17,6 +17,8 @@ using namespace std;
 
 #define yyterminate() Compiler::Parser::make_SCANNEREND(Compiler::location());
 
+#define YY_USER_ACTION driver.setLocation(yyleng);
+
 %}
 %option c++
 %option nodefault
