@@ -499,5 +499,5 @@ identifier:
 %%
 
 void Compiler::Parser::error(const location &loc , const std::string &message) {
-	cerr << "Error at " << driver.location() << ":" << endl << message << endl;
+	cerr << "Error at " << loc << ":" << endl << message << endl;
 }

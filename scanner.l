@@ -17,8 +17,7 @@ using namespace std;
 
 #define yyterminate() Compiler::Parser::make_SCANNEREND(Compiler::location());
 
-#define YY_USER_ACTION driver.setLocation(yyleng);
-
+#define YY_USER_ACTION loc->step(); loc->columns(yyleng);
 %}
 %option c++
 %option nodefault
@@ -71,6 +70,7 @@ using namespace std;
 ">=" { return Compiler::Parser::make_COND_GEQ(Compiler::location()); }
 
 ";"  { return Compiler::Parser::make_SEMICOLON(Compiler::location()); }
+\n   { loc->lines(); }
 [ \n\t\r] {}
 .	{
     return Compiler::Parser::make_ERROR(Compiler::location());

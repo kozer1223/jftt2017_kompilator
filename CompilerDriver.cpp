@@ -30,7 +30,13 @@ void CompilerDriver::compile(){
     cerr << program;
     program.splitToBlocks();
 
-	CommandBlock* p = &program;
+    CommandBlock* p = &program;
+    while(p != nullptr){
+        p->optimize();
+        p = p->nextBlock.get();
+    }
+
+	p = &program;
 	std::set<mpz_class> constants;
 	while(p != nullptr){
 		std::set<mpz_class> cmd_consts = p->getConstants();

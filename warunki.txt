@@ -36,7 +36,7 @@ end:
 
 2) a >= b
 
-równoważne z b >= a dla a,b - symbole
+równoważne z b <= a dla a,b - symbole
 dla b = const
 a >= b równoważne a > b-1, dla b = 0 zawsze true
 

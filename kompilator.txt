@@ -156,3 +156,9 @@ while tmp > 0
  i--
  tmp--
 endwhile
+
+optymalizacje:
+
+- wyżyłowac mnożenie dzielenie modulo i ogolnie wszystko
+- optymalizacja warunku x > 0 (nie zapisuj zmiennej tymczasowej)
+- w forach nie optymalizacja wczytywania zmiennej tymczasowej

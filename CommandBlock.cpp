@@ -162,28 +162,30 @@ AssemblyCode CommandBlock::generateMultiplication(IAddress* target, IAddress* op
   std::string oddLabel = labelManager->nextLabel("mul_ifodd");
   std::string endLabel = labelManager->nextLabel("mul_end");
   // main loop
-  code.pushLabel(loopLabel);
   code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MUL_TEMP1);
+  code.pushLabel(loopLabel);
   code.pushInstruction(AsmInstruction::JumpOdd, oddLabel);
   // if even
   code.pushInstruction(AsmInstruction::JumpZero, endLabel);
-  code.pushInstruction(AsmInstruction::ShiftRight);
-  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
   code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MUL_TEMP2);
   code.pushInstruction(AsmInstruction::ShiftLeft);
   code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP2);
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MUL_TEMP1);
+  code.pushInstruction(AsmInstruction::ShiftRight);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
   code.pushInstruction(AsmInstruction::Jump, loopLabel);
   // if odd
   code.pushLabel(oddLabel);
   code.pushInstruction(normalizeInstruction(AsmInstruction::Load, target), target->getAddress(globalSymbolTable));
   code.pushInstruction(AsmInstruction::Add, globalSymbolTable->MUL_TEMP2);
   code.pushInstruction(normalizeInstruction(AsmInstruction::Store, target), target->getAddress(globalSymbolTable));
-  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MUL_TEMP1);
-  code.pushInstruction(AsmInstruction::ShiftRight);
-  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
+
   code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MUL_TEMP2);
   code.pushInstruction(AsmInstruction::ShiftLeft);
   code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP2);
+  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MUL_TEMP1);
+  code.pushInstruction(AsmInstruction::ShiftRight);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
   code.pushInstruction(AsmInstruction::Jump, loopLabel);
   // end
   code.pushLabel(endLabel);
@@ -666,4 +668,45 @@ std::ostream& operator<<(std::ostream &strm, const CommandBlock &a) {
     strm << command << std::endl;
   }
   return strm;
+}
+
+void CommandBlock::optimize(){
+  // insert optimization here
+  // optimize constant additions
+  std::vector<Command> newCommands;
+  for (auto & command : commands){
+    std::vector<Command> replacement;
+    if (command.command == CommandType::AssignAdd){
+      if (command.addr3.get()->isConstant()){
+        mpz_class const_val = command.addr3.get()->constValue();
+        if (const_val <= 10){
+          if (command.addr1.get()->getAddress(globalSymbolTable) != command.addr2.get()->getAddress(globalSymbolTable)){
+            replacement.push_back(Command(CommandType::Assign, command.addr1, command.addr2));
+          }
+          while (const_val > 0){
+            replacement.push_back(Command(CommandType::Increase, command.addr1));
+            const_val--;
+          }
+        }
+      }
+    } else if (command.command == CommandType::AssignSub){
+      if (command.addr3.get()->isConstant()){
+        mpz_class const_val = command.addr3.get()->constValue();
+        if (const_val <= 10){
+          if (command.addr1.get()->getAddress(globalSymbolTable) != command.addr2.get()->getAddress(globalSymbolTable)){
+            replacement.push_back(Command(CommandType::Assign, command.addr1, command.addr2));
+          }
+          while (const_val > 0){
+            replacement.push_back(Command(CommandType::Decrease, command.addr1));
+            const_val--;
+          }
+        }
+      }
+    }
+    if (replacement.empty()){
+      replacement.push_back(command);
+    }
+    newCommands.insert(newCommands.end(), replacement.begin(), replacement.end());
+  }
+  commands = newCommands;
 }

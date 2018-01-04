@@ -37,6 +37,7 @@ public:
   void convertToTriAddress();
   void splitToBlocks();
   void splitToBlocks(std::map<std::string, CommandBlock*>&);
+  void optimize();
   AssemblyCode generateMultiplication(IAddress*, IAddress*, IAddress*, LabelManager*);
   AssemblyCode generateDivision(IAddress*, IAddress*, IAddress*, LabelManager*);
   AssemblyCode generateModulo(IAddress*, IAddress*, IAddress*, LabelManager*);

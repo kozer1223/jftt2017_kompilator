@@ -25,6 +25,25 @@ std::vector<Command> Condition::getCommandBlock(SymbolTable* symbolTable,
   bool trueBlockPresent = !trueBlock.commands.empty();
   bool falseBlockPresent = !falseBlock.commands.empty();
 
+  // constant optimizations
+  if (rhs.type == ValueType::VConstant){
+    if (rhs.number == 0){
+      if (condition == CondType::Equal){
+        // replace with equivalent
+        condition = CondType::LessEqual;
+      } else if (condition == CondType::GreaterEqual){
+        // always true
+        if (trueBlockPresent){
+          std::vector<Command> commands;
+          commands.insert(commands.end(), trueBlock.commands.begin(), trueBlock.commands.end());
+          return commands;
+        } else {
+          return std::vector<Command>();
+        }
+      }
+    }
+  }
+
   std::vector<Command> commands;
   if (condition == CondType::LessEqual){
     std::string tempSymbol = symbolTable->addTempSymbol();

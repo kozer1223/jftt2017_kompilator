@@ -17,11 +17,14 @@ namespace Compiler {
 
     class Scanner : public yyFlexLexer {
     public:
-        Scanner(CompilerDriver &driver) : driver(driver) {}
+        Scanner(CompilerDriver &driver) : driver(driver) {
+            loc = new Compiler::Parser::location_type();
+        }
         virtual ~Scanner() {}
         virtual Compiler::Parser::symbol_type get_next_token();
     private:
         CompilerDriver &driver;
+        Compiler::Parser::location_type *loc;
     };
 }
 
