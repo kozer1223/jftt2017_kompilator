@@ -25,9 +25,12 @@ std::vector<Command> Condition::getCommandBlock(SymbolTable* symbolTable,
   bool trueBlockPresent = !trueBlock.commands.empty();
   bool falseBlockPresent = !falseBlock.commands.empty();
 
+  bool isRhsZero = false;
+
   // constant optimizations
   if (rhs.type == ValueType::VConstant){
     if (rhs.number == 0){
+      isRhsZero = true;
       if (condition == CondType::Equal){
         // replace with equivalent
         condition = CondType::LessEqual;
@@ -46,26 +49,49 @@ std::vector<Command> Condition::getCommandBlock(SymbolTable* symbolTable,
 
   std::vector<Command> commands;
   if (condition == CondType::LessEqual){
-    std::string tempSymbol = symbolTable->addTempSymbol();
-    std::string trueLabel = labelManager->nextLabel("true_block");
-    std::string endLabel = labelManager->nextLabel("end");
-    std::string falseLabel = labelManager->nextLabel("false_block");
-    commands.push_back(Command(CommandType::AssignSub, new AddrVariable(tempSymbol), new UnparsedValue(lhs), new UnparsedValue(rhs)));
-    if (trueBlockPresent){
-      commands.push_back(Command(CommandType::JumpZero, new AddrVariable(tempSymbol), new AddrLabel(trueLabel)));
+    if (isRhsZero){
+      // quick <= 0 optimization
+      std::string trueLabel = labelManager->nextLabel("true_block");
+      std::string endLabel = labelManager->nextLabel("end");
+      std::string falseLabel = labelManager->nextLabel("false_block");
+      //commands.push_back(Command(CommandType::AssignSub, new AddrVariable(tempSymbol), new UnparsedValue(lhs), new UnparsedValue(rhs)));
+      if (trueBlockPresent){
+        commands.push_back(Command(CommandType::JumpZero, new UnparsedValue(lhs), new AddrLabel(trueLabel)));
+      } else {
+        commands.push_back(Command(CommandType::JumpZero, new UnparsedValue(lhs), new AddrLabel(endLabel)));
+      }
+      if (falseBlockPresent){
+        commands.push_back(Command(CommandType::Label, new AddrLabel(falseLabel)));
+        commands.insert(commands.end(), falseBlock.commands.begin(), falseBlock.commands.end());
+      }
+      if (trueBlockPresent){
+        commands.push_back(Command(CommandType::Jump, new AddrLabel(endLabel)));
+        commands.push_back(Command(CommandType::Label, new AddrLabel(trueLabel)));
+        commands.insert(commands.end(), trueBlock.commands.begin(), trueBlock.commands.end());
+      }
+      commands.push_back(Command(CommandType::Label, new AddrLabel(endLabel)));
     } else {
-      commands.push_back(Command(CommandType::JumpZero, new AddrVariable(tempSymbol), new AddrLabel(endLabel)));
+      std::string tempSymbol = symbolTable->addTempSymbol();
+      std::string trueLabel = labelManager->nextLabel("true_block");
+      std::string endLabel = labelManager->nextLabel("end");
+      std::string falseLabel = labelManager->nextLabel("false_block");
+      commands.push_back(Command(CommandType::AssignSub, new AddrVariable(tempSymbol), new UnparsedValue(lhs), new UnparsedValue(rhs)));
+      if (trueBlockPresent){
+        commands.push_back(Command(CommandType::JumpZero, new AddrVariable(tempSymbol), new AddrLabel(trueLabel)));
+      } else {
+        commands.push_back(Command(CommandType::JumpZero, new AddrVariable(tempSymbol), new AddrLabel(endLabel)));
+      }
+      if (falseBlockPresent){
+        commands.push_back(Command(CommandType::Label, new AddrLabel(falseLabel)));
+        commands.insert(commands.end(), falseBlock.commands.begin(), falseBlock.commands.end());
+      }
+      if (trueBlockPresent){
+        commands.push_back(Command(CommandType::Jump, new AddrLabel(endLabel)));
+        commands.push_back(Command(CommandType::Label, new AddrLabel(trueLabel)));
+        commands.insert(commands.end(), trueBlock.commands.begin(), trueBlock.commands.end());
+      }
+      commands.push_back(Command(CommandType::Label, new AddrLabel(endLabel)));
     }
-    if (falseBlockPresent){
-      commands.push_back(Command(CommandType::Label, new AddrLabel(falseLabel)));
-      commands.insert(commands.end(), falseBlock.commands.begin(), falseBlock.commands.end());
-    }
-    if (trueBlockPresent){
-      commands.push_back(Command(CommandType::Jump, new AddrLabel(endLabel)));
-      commands.push_back(Command(CommandType::Label, new AddrLabel(trueLabel)));
-      commands.insert(commands.end(), trueBlock.commands.begin(), trueBlock.commands.end());
-    }
-    commands.push_back(Command(CommandType::Label, new AddrLabel(endLabel)));
   } else if (condition == CondType::Equal) {
     std::string tempSymbol = symbolTable->addTempSymbol();
     std::string trueLabel = labelManager->nextLabel("true_block");

@@ -140,8 +140,8 @@ public:
 
   std::vector<Command> convertToTriAddress(SymbolTable* st);
   std::set<mpz_class> getConstants();
-  std::string postCommandRegisterState();
-  std::string preCommandRegisterState();
+  std::string postCommandRegisterState() const;
+  std::string preCommandRegisterState() const;
 };
 
 std::ostream& operator<<(std::ostream& strm, const IAddress& a);

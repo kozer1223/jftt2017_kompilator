@@ -23,6 +23,7 @@ public:
   // condition
   std::set<CommandBlock*> fromBlocks;
   std::set<std::string> labels;
+  bool unconditionalJump = false;
 
   SymbolTable* globalSymbolTable;
 
@@ -43,6 +44,8 @@ public:
   AssemblyCode generateModulo(IAddress*, IAddress*, IAddress*, LabelManager*);
   AssemblyCode getAssembly(LabelManager*);
   std::set<mpz_class> getConstants();
+  std::string preBlockRegisterState() const;
+  std::string postBlockRegisterState() const;
 };
 
 std::ostream& operator<<(std::ostream &strm, const CommandBlock &a);

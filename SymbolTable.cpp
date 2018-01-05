@@ -152,7 +152,10 @@ std::string SymbolTable::popIterator(){
 }
 
 mpz_class SymbolTable::getSymbol(std::string symbol){
-  return symbol_map[symbol].address;
+  if (symbol_map.count(symbol)){
+    return symbol_map[symbol].address;
+  }
+  return -1;
 }
 
 mpz_class SymbolTable::getArrayAddress(std::string symbol){

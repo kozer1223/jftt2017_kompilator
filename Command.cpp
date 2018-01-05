@@ -269,7 +269,7 @@ std::set<mpz_class> Command::getConstants(){
   return constants;
 }
 
-std::string Command::postCommandRegisterState(){
+std::string Command::postCommandRegisterState() const{
   switch(command){
     case CommandType::Read: return addr1->toStr();
     case CommandType::Write: return addr1->toStr();
@@ -283,11 +283,13 @@ std::string Command::postCommandRegisterState(){
     case CommandType::Decrease: return addr1->toStr();
     case CommandType::ShiftLeft: return addr1->toStr();
     case CommandType::ShiftRight: return addr1->toStr();
+    case CommandType::JumpZero: return addr1->toStr();
+    case CommandType::JumpOdd: return addr1->toStr();
     default: return Register::UNDEFINED_REGISTER_STATE;
   }
 }
 
-std::string Command::preCommandRegisterState(){
+std::string Command::preCommandRegisterState() const{
   switch(command){
     case CommandType::Write: return addr1->toStr();
     case CommandType::Assign: return addr2->toStr();
@@ -300,6 +302,8 @@ std::string Command::preCommandRegisterState(){
     case CommandType::Decrease: return addr1->toStr();
     case CommandType::ShiftLeft: return addr1->toStr();
     case CommandType::ShiftRight: return addr1->toStr();
+    case CommandType::JumpZero: return addr1->toStr();
+    case CommandType::JumpOdd: return addr1->toStr();
     default: return Register::UNDEFINED_REGISTER_STATE;
   }
 }
