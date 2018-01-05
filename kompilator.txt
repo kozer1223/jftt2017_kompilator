@@ -162,3 +162,80 @@ optymalizacje:
 - wyżyłowac mnożenie dzielenie modulo i ogolnie wszystko
 - optymalizacja warunku x > 0 (nie zapisuj zmiennej tymczasowej)
 - w forach nie optymalizacja wczytywania zmiennej tymczasowej
+
+NEW DIV
+LOAD a
+STORE r
+ZERO
+STORE q
+LOAD b
+STORE t
+---
+LOAD a		: shiftloop
+SUB t
+JZERO shiftend
+LOAD t
+SHL
+STORE t
+JUMP shiftloop
+---
+LOAD t		: shiftend
+INC		: divloop
+SUB b
+JZERO end
+LOAD r
+INC
+SUB t
+JZERO rsmaller
+DEC
+STORE r
+LOAD q
+SHL
+INC
+STORE q
+LOAD t
+SHR
+STORE t
+JUMP divloop
+LOAD q		: rsmaller
+SHL
+STORE q
+LOAD t
+SHR
+STORE t
+JUMP divloop
+		: end
+
+  - mod ---
+  LOAD a
+  STORE r
+  LOAD b
+  STORE t
+  ---
+  LOAD a		: shiftloop
+  SUB t
+  JZERO shiftend
+  LOAD t
+  SHL
+  STORE t
+  JUMP shiftloop
+  ---
+  LOAD t		: shiftend
+  INC		: divloop
+  SUB b
+  JZERO end
+  LOAD r
+  INC
+  SUB t
+  JZERO rsmaller
+  DEC
+  STORE r
+  LOAD t
+  SHR
+  STORE t
+  JUMP divloop
+  LOAD t		: rsmaller
+  SHR
+  STORE t
+  JUMP divloop
+  		: end
