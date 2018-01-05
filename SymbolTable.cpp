@@ -55,6 +55,7 @@ bool SymbolTable::addSymbol(std::string symbol){
   symbolData.isArray = false;
   symbolData.arraySize = 0;
   symbolData.initialized = false;
+  symbolData.dontStore = false;
 
   symbol_map[symbol] = symbolData;
   symbol_list.push_back(symbol);
@@ -72,6 +73,7 @@ bool SymbolTable::addArraySymbol(std::string symbol, mpz_class size){
   symbolData.isArray = true;
   symbolData.arraySize = size;
   symbolData.initialized = false;
+  symbolData.dontStore = false;
 
   symbol_map[symbol] = symbolData;
   symbol_list.push_back(symbol);
@@ -92,6 +94,7 @@ bool SymbolTable::addConstant(mpz_class constant){
   symbolData.isArray = false;
   symbolData.arraySize = 0;
   symbolData.initialized = true;
+  symbolData.dontStore = false;
 
   constants_map[constant] = symbolData;
   constants.insert(constant);
@@ -106,7 +109,7 @@ bool SymbolTable::addConstants(std::set<mpz_class> constants){
   return true;
 }
 
-std::string SymbolTable::addTempSymbol(){
+std::string SymbolTable::addTempSymbol(bool dontStore){
   std::stringstream ss;
   ss << "TMP_";
   ss << lastTempSymbol;
@@ -119,11 +122,16 @@ std::string SymbolTable::addTempSymbol(){
   symbolData.isArray = false;
   symbolData.arraySize = 0;
   symbolData.initialized = true;
+  symbolData.dontStore = dontStore;
 
   symbol_map[symbol] = symbolData;
   temp_symbols.insert(symbol);
 
   return symbol;
+}
+
+std::string SymbolTable::addTempSymbol(){
+  return addTempSymbol(false);
 }
 
 bool SymbolTable::pushIterator(std::string symbol){
@@ -176,6 +184,13 @@ std::vector<std::string> SymbolTable::getSymbols(){
 
 std::set<std::string> SymbolTable::getIterators(){
   return iterator_list;
+}
+
+bool SymbolTable::hasDontStoreFlag(std::string symbol){
+  if (symbol_map.count(symbol)){
+    return symbol_map[symbol].dontStore;
+  }
+  return true;
 }
 
 bool SymbolTable::containsSymbol(std::string symbol){

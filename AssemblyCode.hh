@@ -61,6 +61,8 @@ public:
   std::map<std::string, int> labelLines;
 
   void pushToFront(AsmInstruction);
+  void pushToFront(AsmInstruction, mpz_class);
+  void pushToFront(AsmInstruction, std::string);
   void pushInstruction(AsmInstruction);
   void pushInstruction(AsmInstruction, mpz_class);
   void pushInstruction(AsmInstruction, std::string);
@@ -74,6 +76,28 @@ public:
 inline void AssemblyCode::pushToFront(AsmInstruction in) {
   std::stringstream ss;
   ss << instructionCode(in);
+  instructionSet.insert(instructionSet.begin(), ss.str());
+  for (auto lbl : labelLines){
+    labelLines[lbl.first]++;
+  }
+}
+
+inline void AssemblyCode::pushToFront(AsmInstruction in, mpz_class n) {
+  std::stringstream ss;
+  ss << instructionCode(in);
+  ss << " ";
+  ss << n;
+  instructionSet.insert(instructionSet.begin(), ss.str());
+  for (auto lbl : labelLines){
+    labelLines[lbl.first]++;
+  }
+}
+
+inline void AssemblyCode::pushToFront(AsmInstruction in, std::string label) {
+  std::stringstream ss;
+  ss << instructionCode(in);
+  ss << " *";
+  ss << label;
   instructionSet.insert(instructionSet.begin(), ss.str());
   for (auto lbl : labelLines){
     labelLines[lbl.first]++;

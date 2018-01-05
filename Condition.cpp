@@ -71,7 +71,7 @@ std::vector<Command> Condition::getCommandBlock(SymbolTable* symbolTable,
       }
       commands.push_back(Command(CommandType::Label, new AddrLabel(endLabel)));
     } else {
-      std::string tempSymbol = symbolTable->addTempSymbol();
+      std::string tempSymbol = symbolTable->addTempSymbol(true);
       std::string trueLabel = labelManager->nextLabel("true_block");
       std::string endLabel = labelManager->nextLabel("end");
       std::string falseLabel = labelManager->nextLabel("false_block");
@@ -93,7 +93,7 @@ std::vector<Command> Condition::getCommandBlock(SymbolTable* symbolTable,
       commands.push_back(Command(CommandType::Label, new AddrLabel(endLabel)));
     }
   } else if (condition == CondType::Equal) {
-    std::string tempSymbol = symbolTable->addTempSymbol();
+    std::string tempSymbol = symbolTable->addTempSymbol(true);
     std::string trueLabel = labelManager->nextLabel("true_block");
     std::string endLabel = labelManager->nextLabel("end");
     std::string checkLabel = labelManager->nextLabel("eq_check");

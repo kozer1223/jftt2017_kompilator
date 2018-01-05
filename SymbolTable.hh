@@ -15,6 +15,7 @@ struct Symbol {
   bool isArray;
   mpz_class arraySize;
   bool initialized;
+  bool dontStore;
 };
 
 class SymbolTable {
@@ -51,6 +52,7 @@ public:
   bool addConstants(std::set<mpz_class>);
 
   std::string addTempSymbol();
+  std::string addTempSymbol(bool dontStore);
 
   bool pushIterator(std::string symbol);
   std::string popIterator();
@@ -59,6 +61,7 @@ public:
   mpz_class getArrayAddress(std::string symbol);
   mpz_class getArraySize(std::string symbol);
   mpz_class getConstant(mpz_class constant);
+  bool hasDontStoreFlag(std::string symbol);
 
   std::vector<std::string> getSymbols();
   std::set<std::string> getIterators();
