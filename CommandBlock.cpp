@@ -289,6 +289,7 @@ AssemblyCode CommandBlock::generateDivision(IAddress* target, IAddress* op1, IAd
   // target = quotient
   // labels
   std::string shiftLoopLabel = labelManager->nextLabel("div_shiftloop");
+  std::string firstShiftLoopLabel = labelManager->nextLabel("div_firstshiftloop");
   std::string shiftEndLabel = labelManager->nextLabel("div_shiftend");
   std::string rsmallerLabel = labelManager->nextLabel("div_rsmaller");
   std::string loopLabel = labelManager->nextLabel("div_loop");
@@ -311,14 +312,26 @@ AssemblyCode CommandBlock::generateDivision(IAddress* target, IAddress* op1, IAd
   code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op2), op2->getAddress(globalSymbolTable));
   // division by 0 returns 0
   code.pushInstruction(AsmInstruction::JumpZero, zeroLabel);
-  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
+  //code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
   //code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op1), op1->getAddress(globalSymbolTable));
   // test
-  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MOD_POWER);
-  code.pushInstruction(AsmInstruction::Increase);
+  //code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MOD_POWER);
+  //code.pushInstruction(AsmInstruction::Increase);
   // /test
-  code.pushInstruction(AsmInstruction::Sub, globalSymbolTable->DIV_TEMP);
-  code.pushInstruction(AsmInstruction::JumpZero, shiftEndLabel);
+  code.pushInstruction(AsmInstruction::Sub, globalSymbolTable->MOD_POWER);
+  code.pushInstruction(AsmInstruction::JumpZero, firstShiftLoopLabel);
+  code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op2), op2->getAddress(globalSymbolTable));
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::Jump, loopLabel);
+
+  code.pushLabel(firstShiftLoopLabel);
+  code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op2), op2->getAddress(globalSymbolTable));
+  code.pushInstruction(AsmInstruction::ShiftLeft);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
+
+  code.pushInstruction(AsmInstruction::Sub, globalSymbolTable->MOD_POWER);
+  code.pushInstruction(AsmInstruction::JumpZero, shiftLoopLabel);
+  code.pushInstruction(AsmInstruction::Jump, shiftEndLabel);
   code.pushLabel(shiftLoopLabel);
   code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_TEMP);
   code.pushInstruction(AsmInstruction::ShiftLeft);
@@ -396,6 +409,7 @@ AssemblyCode CommandBlock::generateModulo(IAddress* target, IAddress* op1, IAddr
   // target = remainder
   // labels
   std::string shiftLoopLabel = labelManager->nextLabel("mod_shiftloop");
+  std::string firstShiftLoopLabel = labelManager->nextLabel("div_firstshiftloop");
   std::string shiftEndLabel = labelManager->nextLabel("mod_shiftend");
   std::string rsmallerLabel = labelManager->nextLabel("mod_rsmaller");
   std::string loopLabel = labelManager->nextLabel("mod_loop");
@@ -416,15 +430,27 @@ AssemblyCode CommandBlock::generateModulo(IAddress* target, IAddress* op1, IAddr
   code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op2), op2->getAddress(globalSymbolTable));
   // remainder of division by 0 returns 0
   code.pushInstruction(AsmInstruction::JumpZero, zeroLabel);
-  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
+  //code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
   // shift temp block
   //code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op1), op1->getAddress(globalSymbolTable));
   // test
-  code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MOD_POWER);
-  code.pushInstruction(AsmInstruction::Increase);
+  //code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MOD_POWER);
+  //code.pushInstruction(AsmInstruction::Increase);
   // /test
-  code.pushInstruction(AsmInstruction::Sub, globalSymbolTable->DIV_TEMP);
-  code.pushInstruction(AsmInstruction::JumpZero, shiftEndLabel);
+  code.pushInstruction(AsmInstruction::Sub, globalSymbolTable->MOD_POWER);
+  code.pushInstruction(AsmInstruction::JumpZero, firstShiftLoopLabel);
+  code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op2), op2->getAddress(globalSymbolTable));
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
+  code.pushInstruction(AsmInstruction::Jump, loopLabel);
+
+  code.pushLabel(firstShiftLoopLabel);
+  code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op2), op2->getAddress(globalSymbolTable));
+  code.pushInstruction(AsmInstruction::ShiftLeft);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->DIV_TEMP);
+
+  code.pushInstruction(AsmInstruction::Sub, globalSymbolTable->MOD_POWER);
+  code.pushInstruction(AsmInstruction::JumpZero, shiftLoopLabel);
+  code.pushInstruction(AsmInstruction::Jump, shiftEndLabel);
   code.pushLabel(shiftLoopLabel);
   code.pushInstruction(AsmInstruction::Load, globalSymbolTable->DIV_TEMP);
   code.pushInstruction(AsmInstruction::ShiftLeft);
