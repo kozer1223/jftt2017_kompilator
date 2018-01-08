@@ -200,7 +200,7 @@ AssemblyCode CommandBlock::generateMultiplication(IAddress* target, IAddress* op
     code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op1), op1->getAddress(globalSymbolTable));
   }
   code.pushInstruction(AsmInstruction::ShiftRight);
-  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
+  //code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
   code.pushInstruction(AsmInstruction::Jump, loopLabel);
   // if odd
   code.pushLabel(oddbeginLabel);
@@ -213,22 +213,23 @@ AssemblyCode CommandBlock::generateMultiplication(IAddress* target, IAddress* op
     code.pushInstruction(normalizeInstruction(AsmInstruction::Load, op1), op1->getAddress(globalSymbolTable));
   }
   code.pushInstruction(AsmInstruction::ShiftRight);
-  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
+  //code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
   // main loop
   code.pushLabel(loopLabel);
   code.pushInstruction(AsmInstruction::JumpOdd, oddLabel);
   // if even
   code.pushInstruction(AsmInstruction::JumpZero, endLabel);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
   code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MUL_TEMP2);
   code.pushInstruction(AsmInstruction::ShiftLeft);
   code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP2);
 
   code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MUL_TEMP1);
   code.pushInstruction(AsmInstruction::ShiftRight);
-  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
   code.pushInstruction(AsmInstruction::Jump, loopLabel);
   // if odd
   code.pushLabel(oddLabel);
+  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
   code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MUL_TEMP2);
   code.pushInstruction(AsmInstruction::ShiftLeft);
   code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP2);
@@ -237,7 +238,6 @@ AssemblyCode CommandBlock::generateMultiplication(IAddress* target, IAddress* op
 
   code.pushInstruction(AsmInstruction::Load, globalSymbolTable->MUL_TEMP1);
   code.pushInstruction(AsmInstruction::ShiftRight);
-  code.pushInstruction(AsmInstruction::Store, globalSymbolTable->MUL_TEMP1);
   code.pushInstruction(AsmInstruction::Jump, loopLabel);
   // if zero
   code.pushLabel(zeroLabel);

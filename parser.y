@@ -474,6 +474,10 @@ identifier:
 		stringstream errMessage;
 		errMessage << "Variable " << $3 << " is an array";
 		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+	} else if (!driver.symbolTable.isInitialized($3)){
+		stringstream errMessage;
+		errMessage << "Variable " << $3 << " was not initialized";
+		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
 	}
 	$$ = Identifier($1, $3);
 }
