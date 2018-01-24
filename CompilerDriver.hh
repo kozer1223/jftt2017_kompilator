@@ -16,6 +16,8 @@ public:
     friend class Parser;
     friend class Scanner;
 
+    void compile();
+
 private:
     unsigned int cur_location;
     Scanner scanner;
@@ -23,8 +25,6 @@ private:
     SymbolTable symbolTable;
     LabelManager labelManager;
     CommandBlock program;
-
-    void compile();
 
     void setLocation(unsigned int location);
     unsigned int location();

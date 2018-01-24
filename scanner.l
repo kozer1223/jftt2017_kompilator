@@ -76,10 +76,10 @@ using namespace std;
     return Compiler::Parser::make_ERROR(Compiler::location());
   }
 
-<<EOF>>     { return yyterminate(); }
-
 <COMMENT>")" { BEGIN(INITIAL); }
 <COMMENT>\n {}
 <COMMENT>. {}
-<COMMENT><<EOF>>     { return yyterminate(); }
+<COMMENT><<EOF>>     { return Compiler::Parser::make_ERROR(Compiler::location()); }
+
+<<EOF>>     { return yyterminate(); }
 %%

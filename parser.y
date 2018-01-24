@@ -149,7 +149,6 @@ program: /*empty*/
 PBEGIN commands END
 {
 	driver.program = $5;
-	driver.compile();
 }
 ;
 vdeclarations: /*empty*/
