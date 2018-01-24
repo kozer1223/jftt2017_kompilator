@@ -3,7 +3,7 @@ Autor: Kacper Kozerski
 
 ## Kompilacja
 1) Do kompilacji programu potrzebne są:
- - g++
+ - g++ z obsługą C++11
  - bison
  - flex
  - biblioteka GMP dla C++
