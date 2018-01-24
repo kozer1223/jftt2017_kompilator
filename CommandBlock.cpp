@@ -348,7 +348,7 @@ AssemblyCode CommandBlock::generateDivision(IAddress* target, IAddress* op1, IAd
   AssemblyCode code;
 
   if (op2->isConstant()){
-    // division by constant optimalization
+    // division by constant optimization
     mpz_class constVal = op2->constValue();
     // check for division by a power of 2
     mpz_class temp = constVal;
@@ -515,6 +515,28 @@ AssemblyCode CommandBlock::generateDivision(IAddress* target, IAddress* op1, IAd
 
 AssemblyCode CommandBlock::generateModulo(IAddress* target, IAddress* op1, IAddress* op2, LabelManager* labelManager){
   AssemblyCode code;
+
+  if (op2->isConstant()){
+    // modulo by constant optimization
+    mpz_class constVal = op2->constValue();
+    if (constVal == 2){
+      std::string ifoddLabel = labelManager->nextLabel("mod_ifodd");
+      std::string endLabel = labelManager->nextLabel("mod_end");
+
+      code.pushInstruction(AsmInstruction::JumpOdd, ifoddLabel);
+      code.pushInstruction(AsmInstruction::Zero);
+      code.pushInstruction(AsmInstruction::Jump, endLabel);
+      // if odd
+      code.pushLabel(ifoddLabel);
+      code.pushInstruction(AsmInstruction::Zero);
+      code.pushInstruction(AsmInstruction::Increase);
+      // end
+      code.pushLabel(endLabel);
+      code.pushInstruction(normalizeInstruction(AsmInstruction::Store, target), target->getAddress(globalSymbolTable));
+
+      return code;
+    }
+  }
   // target = remainder
   // labels
   std::string shiftLoopLabel = labelManager->nextLabel("mod_shiftloop");
@@ -807,6 +829,12 @@ AssemblyCode CommandBlock::getAssembly(LabelManager* labelManager){
       isPointer = cmd.addr1.get()->isPointer();
       modified = true;
       //code.pushInstruction(AsmInstruction::Store, cmd.addr1.get()->getAddress(globalSymbolTable));
+    } else if (type == CommandType::SetZero){
+      code.pushInstruction(AsmInstruction::Zero);
+      registerAddress = cmd.addr1.get()->getAddress(globalSymbolTable);
+      isPointer = cmd.addr1.get()->isPointer();
+      modified = true;
+      //code.pushInstruction(AsmInstruction::Store, cmd.addr1.get()->getAddress(globalSymbolTable));
     }
     // new register state
     registerState = cmd.postCommandRegisterState();
@@ -932,39 +960,97 @@ std::ostream& operator<<(std::ostream &strm, const CommandBlock &a) {
   return strm;
 }
 
+std::vector<Command> generateConstant(std::shared_ptr<IAddress> target, mpz_class number){
+  std::vector<Command> commands;
+
+  while (number > 0){
+    mpz_class remainder = number % 2;
+    if (remainder == 1){
+      //code.pushToFront(AsmInstruction::Increase);
+      commands.insert(commands.begin(), Command(CommandType::Increase, target));
+    }
+    if (number > 1){
+      //code.pushToFront(AsmInstruction::ShiftLeft);
+      commands.insert(commands.begin(), Command(CommandType::ShiftLeft, target));
+    }
+    number /= 2;
+  }
+  commands.insert(commands.begin(), Command(CommandType::SetZero, target));
+  return commands;
+}
+
 void CommandBlock::optimize(){
-  // insert optimization here
-  // optimize constant additions
+  // various assignment optimizations
   std::vector<Command> newCommands;
+  std::string lastRegisterState = Register::UNDEFINED_REGISTER_STATE;
+
   for (auto & command : commands){
     bool emptyReplacement = false;
     std::vector<Command> replacement;
     if (command.command == CommandType::AssignAdd){
-      // replace small constant addition with add
+      // for addition (commutative), put constant as addr3
+      if (command.addr2.get()->isConstant()){
+        command.addr2.swap(command.addr3);
+      }
+      // (commutative) match first operand with previous command if possible
+      std::string addr3Str = command.addr3.get()->toStr();
+      if (addr3Str == lastRegisterState){
+        command.addr2.swap(command.addr3);
+      }
+
       if (command.addr3.get()->isConstant()){
-        mpz_class const_val = command.addr3.get()->constValue();
-        if (const_val <= 10){
-          if (command.addr1.get()->getAddress(globalSymbolTable) != command.addr2.get()->getAddress(globalSymbolTable)){
-            replacement.push_back(Command(CommandType::Assign, command.addr1, command.addr2));
+        if (command.addr2.get()->isConstant()){
+          // constant + constant
+          mpz_class const_val1 = command.addr2.get()->constValue();
+          mpz_class const_val2 = command.addr3.get()->constValue();
+          mpz_class result_val = const_val1 + const_val2;
+          if (result_val < 0){
+            result_val = 0;
           }
-          while (const_val > 0){
-            replacement.push_back(Command(CommandType::Increase, command.addr1));
-            const_val--;
+          std::shared_ptr<IAddress> resultConstant = std::make_shared<AddrConstant>(result_val);
+          replacement.push_back(Command(CommandType::Assign, command.addr1, resultConstant));
+
+        } else {
+          // replace small constant addition with add
+          mpz_class const_val = command.addr3.get()->constValue();
+          if (const_val <= 10){
+            if (command.addr1.get()->getAddress(globalSymbolTable) != command.addr2.get()->getAddress(globalSymbolTable)){
+              replacement.push_back(Command(CommandType::Assign, command.addr1, command.addr2));
+            }
+            while (const_val > 0){
+              replacement.push_back(Command(CommandType::Increase, command.addr1));
+              const_val--;
+            }
           }
+
         }
       }
     } else if (command.command == CommandType::AssignSub){
-      // replace small constant subtraction with dec
       if (command.addr3.get()->isConstant()){
-        mpz_class const_val = command.addr3.get()->constValue();
-        if (const_val <= 10){
-          if (command.addr1.get()->getAddress(globalSymbolTable) != command.addr2.get()->getAddress(globalSymbolTable)){
-            replacement.push_back(Command(CommandType::Assign, command.addr1, command.addr2));
+        if (command.addr2.get()->isConstant()){
+          // constant - constant
+          mpz_class const_val1 = command.addr2.get()->constValue();
+          mpz_class const_val2 = command.addr3.get()->constValue();
+          mpz_class result_val = const_val1 - const_val2;
+          if (result_val < 0){
+            result_val = 0;
           }
-          while (const_val > 0){
-            replacement.push_back(Command(CommandType::Decrease, command.addr1));
-            const_val--;
+          std::shared_ptr<IAddress> resultConstant = std::make_shared<AddrConstant>(result_val);
+          replacement.push_back(Command(CommandType::Assign, command.addr1, resultConstant));
+
+        } else {
+          // replace small constant subtraction with dec
+          mpz_class const_val = command.addr3.get()->constValue();
+          if (const_val <= 10){
+            if (command.addr1.get()->getAddress(globalSymbolTable) != command.addr2.get()->getAddress(globalSymbolTable)){
+              replacement.push_back(Command(CommandType::Assign, command.addr1, command.addr2));
+            }
+            while (const_val > 0){
+              replacement.push_back(Command(CommandType::Decrease, command.addr1));
+              const_val--;
+            }
           }
+
         }
       }
     } else if (command.command == CommandType::AssignMul){
@@ -972,20 +1058,40 @@ void CommandBlock::optimize(){
       if (command.addr2.get()->isConstant()){
         command.addr2.swap(command.addr3);
       }
+      // (commutative) match first operand with previous command if possible
+      std::string addr3Str = command.addr3.get()->toStr();
+      if (addr3Str == lastRegisterState){
+        command.addr2.swap(command.addr3);
+      }
+      // constant optimization
       if (command.addr3.get()->isConstant()){
-        mpz_class const_val = command.addr3.get()->constValue();
-        // optimize some multiplication constants
-        if (const_val == 0){
-          // a * 0 = 0
-          std::shared_ptr<IAddress> zeroConst = std::make_shared<AddrConstant>(0);
-          replacement.push_back(Command(CommandType::Assign, command.addr1, zeroConst));
-        } else if (const_val == 1){
-          // a * 1 = a
-          if (command.addr1.get()->getAddress(globalSymbolTable) != command.addr2.get()->getAddress(globalSymbolTable)){
-            replacement.push_back(Command(CommandType::Assign, command.addr1, command.addr2));
-          } else {
-            emptyReplacement = true;
+        if (command.addr2.get()->isConstant()){
+          // constant * constant
+          mpz_class const_val1 = command.addr2.get()->constValue();
+          mpz_class const_val2 = command.addr3.get()->constValue();
+          mpz_class result_val = const_val1 * const_val2;
+          if (result_val < 0){
+            result_val = 0;
           }
+          std::shared_ptr<IAddress> resultConstant = std::make_shared<AddrConstant>(result_val);
+          replacement.push_back(Command(CommandType::Assign, command.addr1, resultConstant));
+
+        } else {
+          mpz_class const_val = command.addr3.get()->constValue();
+          // optimize some multiplication constants
+          if (const_val == 0){
+            // a * 0 = 0
+            std::shared_ptr<IAddress> zeroConst = std::make_shared<AddrConstant>(0);
+            replacement.push_back(Command(CommandType::Assign, command.addr1, zeroConst));
+          } else if (const_val == 1){
+            // a * 1 = a
+            if (command.addr1.get()->getAddress(globalSymbolTable) != command.addr2.get()->getAddress(globalSymbolTable)){
+              replacement.push_back(Command(CommandType::Assign, command.addr1, command.addr2));
+            } else {
+              emptyReplacement = true;
+            }
+          }
+
         }
       }
     } else if (command.command == CommandType::AssignDiv){
@@ -1003,6 +1109,19 @@ void CommandBlock::optimize(){
           } else {
             emptyReplacement = true;
           }
+        } else {
+          if (command.addr2.get()->isConstant()){
+            // constant / constant
+            mpz_class const_val1 = command.addr2.get()->constValue();
+            mpz_class const_val2 = command.addr3.get()->constValue();
+            mpz_class result_val = const_val1 / const_val2;
+            if (result_val < 0){
+              result_val = 0;
+            }
+            std::shared_ptr<IAddress> resultConstant = std::make_shared<AddrConstant>(result_val);
+            replacement.push_back(Command(CommandType::Assign, command.addr1, resultConstant));
+
+          }
         }
       }
     } else if (command.command == CommandType::AssignMod){
@@ -1013,6 +1132,19 @@ void CommandBlock::optimize(){
           // a % 0 = 0, a % 1 = 0
           std::shared_ptr<IAddress> zeroConst = std::make_shared<AddrConstant>(0);
           replacement.push_back(Command(CommandType::Assign, command.addr1, zeroConst));
+        } else {
+          if (command.addr2.get()->isConstant()){
+            // constant % constant
+            mpz_class const_val1 = command.addr2.get()->constValue();
+            mpz_class const_val2 = command.addr3.get()->constValue();
+            mpz_class result_val = const_val1 % const_val2;
+            if (result_val < 0){
+              result_val = 0;
+            }
+            std::shared_ptr<IAddress> resultConstant = std::make_shared<AddrConstant>(result_val);
+            replacement.push_back(Command(CommandType::Assign, command.addr1, resultConstant));
+
+          }
         }
       }
     }
@@ -1020,6 +1152,40 @@ void CommandBlock::optimize(){
       replacement.push_back(command);
     }
     newCommands.insert(newCommands.end(), replacement.begin(), replacement.end());
+    // get last register state
+    if (!newCommands.empty()){
+      lastRegisterState = std::prev(newCommands.end())->postCommandRegisterState();
+    }
+  }
+  commands = newCommands;
+
+  // second pass
+  newCommands.clear();
+
+  for (auto & command : commands){
+    bool emptyReplacement = false;
+    std::vector<Command> replacement;
+
+    if (command.command == CommandType::Assign){
+      // small constant optimization
+      if (command.addr2.get()->isConstant()){
+        mpz_class const_val = command.addr2.get()->constValue();
+        std::vector<Command> constantCode = generateConstant(command.addr1, const_val);
+        int time = constantCode.size();
+        if (time <= 10){
+          replacement = constantCode;
+        }
+      }
+    }
+    if (replacement.empty() && !emptyReplacement){
+      replacement.push_back(command);
+    }
+    newCommands.insert(newCommands.end(), replacement.begin(), replacement.end());
+    // get last register state
+    if (!newCommands.empty()){
+      lastRegisterState = std::prev(newCommands.end())->postCommandRegisterState();
+    }
+
   }
   commands = newCommands;
 }

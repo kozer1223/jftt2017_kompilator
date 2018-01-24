@@ -286,6 +286,7 @@ std::string Command::postCommandRegisterState() const{
     case CommandType::Decrease: return addr1->toStr();
     case CommandType::ShiftLeft: return addr1->toStr();
     case CommandType::ShiftRight: return addr1->toStr();
+    case CommandType::SetZero: return addr1->toStr();
     case CommandType::JumpZero: return addr1->toStr();
     case CommandType::JumpOdd: return addr1->toStr();
     default: return Register::UNDEFINED_REGISTER_STATE;
@@ -366,6 +367,7 @@ std::ostream& operator<<(std::ostream &strm, const Command &a) {
     case CommandType::Decrease : return strm << *(a.addr1) << "--";
     case CommandType::ShiftLeft : return strm << *(a.addr1) << " *= 2";
     case CommandType::ShiftRight : return strm << *(a.addr1) << " /= 2";
+    case CommandType::SetZero : return strm << *(a.addr1) << " := 0";
   }
   return strm;
 }

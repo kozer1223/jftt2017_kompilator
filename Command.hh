@@ -116,7 +116,8 @@ enum class CommandType {
   Increase,
   Decrease,
   ShiftLeft,
-  ShiftRight
+  ShiftRight,
+  SetZero
 };
 
 class Command {

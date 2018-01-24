@@ -165,3 +165,16 @@ true_block:  (true_block)
 false_block: (false_block)
 end:
 </assembly>
+
+7) alternate a = b (for small constants)
+
+tmp := a - b
+if tmp == 0 goto eq_check
+label false_block
+[ false_block ]
+goto end
+label eq_check
+tmp := a - (b-1)
+if tmp == 0 goto false_block
+[ true_block ]
+label end
