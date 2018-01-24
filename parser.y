@@ -77,6 +77,10 @@ using namespace Compiler;
 %parse-param { Compiler::Scanner &scanner }
 %parse-param { Compiler::CompilerDriver &driver }
 %locations
+%initial-action
+{
+
+};
 %define parse.trace
 %define parse.error verbose
 
@@ -157,7 +161,7 @@ vdeclarations: /*empty*/
   if (driver.symbolTable.containsSymbol($2)){
     stringstream errMessage;
     errMessage << "Identifier " << $2 << " already exists";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
   }
   driver.symbolTable.addSymbol($2);
   //driver.symbolTable.printSymbolData($2);
@@ -167,7 +171,7 @@ vdeclarations: /*empty*/
   if (driver.symbolTable.containsSymbol($2)){
     stringstream errMessage;
     errMessage << "Identifier " << $2 << " already exists";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
   }
 	mpz_class size($4);
   driver.symbolTable.addArraySymbol($2, size);
@@ -200,7 +204,7 @@ command:
     // assignment to iterator
       stringstream errMessage;
       errMessage << "Cannot assign value to iterator " << lhs.symbol << ".";
-			Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+			Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
   }
 	if (!lhs.isArray){
 		driver.symbolTable.initialize(lhs.symbol);
@@ -242,11 +246,11 @@ command:
   if (driver.symbolTable.containsSymbol($2)){
     stringstream errMessage;
     errMessage << "Identifier " << $2 << " already exists.";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
   } else if (driver.symbolTable.iteratorOnStack($2)){
     stringstream errMessage;
     errMessage << "Identifier " << $2 << " is already used as an iterator.";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
   }
   driver.symbolTable.pushIterator($2);
 }
@@ -306,11 +310,11 @@ DO commands ENDFOR
   if (driver.symbolTable.containsSymbol($2)){
     stringstream errMessage;
     errMessage << "Identifier " << $2 << " already exists.";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
   } else if (driver.symbolTable.iteratorOnStack($2)){
     stringstream errMessage;
     errMessage << "Identifier " << $2 << " is already used as an iterator.";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
   }
   driver.symbolTable.pushIterator($2);
 }
@@ -436,7 +440,7 @@ value:
 	if (!$1.isArray && !driver.symbolTable.isInitialized($1.symbol)){
     stringstream errMessage;
     errMessage << "Variable " << $1 << " was not initialized";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
 	}
 	$$ = Value($1);
 }
@@ -447,11 +451,11 @@ identifier:
   if (!driver.symbolTable.containsSymbol($1) && !driver.symbolTable.iteratorOnStack($1)){
     stringstream errMessage;
     errMessage << "Variable " << $1 << " was not declared";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
   } else if (driver.symbolTable.isArray($1)){
 		stringstream errMessage;
     errMessage << "Variable " << $1 << " is an array";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
 	}
   $$ = Identifier($1);
 }
@@ -460,23 +464,23 @@ identifier:
 	if (!driver.symbolTable.containsSymbol($1)){
 		stringstream errMessage;
 		errMessage << "Variable " << $1 << " was not declared";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
 	} else if (!driver.symbolTable.containsSymbol($3) && !driver.symbolTable.iteratorOnStack($3)){
 		stringstream errMessage;
 		errMessage << "Variable " << $3 << " was not declared";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
 	}  else if (!driver.symbolTable.isArray($1)){
 		stringstream errMessage;
 		errMessage << "Variable " << $1 << " is not an array";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
 	} else if (driver.symbolTable.isArray($3)){
 		stringstream errMessage;
 		errMessage << "Variable " << $3 << " is an array";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
 	} else if (!driver.symbolTable.isInitialized($3)){
 		stringstream errMessage;
 		errMessage << "Variable " << $3 << " was not initialized";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
 	}
 	$$ = Identifier($1, $3);
 }
@@ -486,15 +490,15 @@ identifier:
 	if (!driver.symbolTable.containsSymbol($1)){
 		stringstream errMessage;
 		errMessage << "Variable " << $1 << " was not declared";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
 	} else if (!driver.symbolTable.isArray($1)){
 		stringstream errMessage;
 		errMessage << "Variable " << $1 << " is not an array";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
 	} else if (index >= driver.symbolTable.getArraySize($1)){
 		stringstream errMessage;
 		errMessage << "Index " << $3 << " out of array bounds";
-		Compiler::Parser::error(Compiler::location(), errMessage.str()); return 1;
+		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
 	}
 	$$ = Identifier($1, index);
 }

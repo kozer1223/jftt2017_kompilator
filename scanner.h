@@ -22,9 +22,9 @@ namespace Compiler {
         }
         virtual ~Scanner() {}
         virtual Compiler::Parser::symbol_type get_next_token();
+        Compiler::Parser::location_type *loc;
     private:
         CompilerDriver &driver;
-        Compiler::Parser::location_type *loc;
     };
 }
 

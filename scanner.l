@@ -15,9 +15,9 @@
 
 using namespace std;
 
-#define yyterminate() Compiler::Parser::make_SCANNEREND(Compiler::location());
+#define yyterminate() Compiler::Parser::make_SCANNEREND(*loc);
 
-#define YY_USER_ACTION loc->step(); loc->columns(yyleng);
+#define YY_USER_ACTION loc->columns(yyleng);
 %}
 %option c++
 %option nodefault
@@ -27,59 +27,59 @@ using namespace std;
 %x COMMENT
 %%
 "(" { BEGIN(COMMENT); }
-[0-9]+ 	{ return Compiler::Parser::make_NUMBER(yytext, Compiler::location()); }
-[_a-z]+ { return Compiler::Parser::make_PIDENTIFIER(yytext, Compiler::location()); }
+[0-9]+ 	{ return Compiler::Parser::make_NUMBER(yytext, *loc); }
+[_a-z]+ { return Compiler::Parser::make_PIDENTIFIER(yytext, *loc); }
 
-"VAR"   { return Compiler::Parser::make_VAR(Compiler::location()); }
-"BEGIN" { return Compiler::Parser::make_PBEGIN(Compiler::location()); }
-"END"   { return Compiler::Parser::make_END(Compiler::location()); }
+"VAR"   { return Compiler::Parser::make_VAR(*loc); }
+"BEGIN" { return Compiler::Parser::make_PBEGIN(*loc); }
+"END"   { return Compiler::Parser::make_END(*loc); }
 
-"IF"    { return Compiler::Parser::make_IF(Compiler::location()); }
-"THEN"  { return Compiler::Parser::make_THEN(Compiler::location()); }
-"ELSE"  { return Compiler::Parser::make_ELSE(Compiler::location()); }
-"ENDIF" { return Compiler::Parser::make_ENDIF(Compiler::location()); }
+"IF"    { return Compiler::Parser::make_IF(*loc); }
+"THEN"  { return Compiler::Parser::make_THEN(*loc); }
+"ELSE"  { return Compiler::Parser::make_ELSE(*loc); }
+"ENDIF" { return Compiler::Parser::make_ENDIF(*loc); }
 
-"WHILE" { return Compiler::Parser::make_WHILE(Compiler::location()); }
-"DO"    { return Compiler::Parser::make_DO(Compiler::location()); }
-"ENDWHILE"  { return Compiler::Parser::make_ENDWHILE(Compiler::location()); }
+"WHILE" { return Compiler::Parser::make_WHILE(*loc); }
+"DO"    { return Compiler::Parser::make_DO(*loc); }
+"ENDWHILE"  { return Compiler::Parser::make_ENDWHILE(*loc); }
 
-"FOR"   { return Compiler::Parser::make_FOR(Compiler::location()); }
-"FROM"  { return Compiler::Parser::make_FROM(Compiler::location()); }
-"TO"    { return Compiler::Parser::make_TO(Compiler::location()); }
-"DOWNTO"  { return Compiler::Parser::make_DOWNTO(Compiler::location()); }
-"ENDFOR"  { return Compiler::Parser::make_ENDFOR(Compiler::location()); }
+"FOR"   { return Compiler::Parser::make_FOR(*loc); }
+"FROM"  { return Compiler::Parser::make_FROM(*loc); }
+"TO"    { return Compiler::Parser::make_TO(*loc); }
+"DOWNTO"  { return Compiler::Parser::make_DOWNTO(*loc); }
+"ENDFOR"  { return Compiler::Parser::make_ENDFOR(*loc); }
 
-"READ"  { return Compiler::Parser::make_READ(Compiler::location()); }
-"WRITE" { return Compiler::Parser::make_WRITE(Compiler::location()); }
+"READ"  { return Compiler::Parser::make_READ(*loc); }
+"WRITE" { return Compiler::Parser::make_WRITE(*loc); }
 
-"["   { return Compiler::Parser::make_LBRACKET(Compiler::location()); }
-"]"   { return Compiler::Parser::make_RBRACKET(Compiler::location()); }
+"["   { return Compiler::Parser::make_LBRACKET(*loc); }
+"]"   { return Compiler::Parser::make_RBRACKET(*loc); }
 
-"+"	 { return Compiler::Parser::make_OPERATOR_PLUS(Compiler::location()); }
-"-"	 { return Compiler::Parser::make_OPERATOR_MINUS(Compiler::location()); }
-"*"	 { return Compiler::Parser::make_OPERATOR_MULT(Compiler::location()); }
-"/"	 { return Compiler::Parser::make_OPERATOR_DIV(Compiler::location()); }
-"%"	 { return Compiler::Parser::make_OPERATOR_MOD(Compiler::location()); }
-":=" { return Compiler::Parser::make_OPERATOR_ASSIGN(Compiler::location()); }
+"+"	 { return Compiler::Parser::make_OPERATOR_PLUS(*loc); }
+"-"	 { return Compiler::Parser::make_OPERATOR_MINUS(*loc); }
+"*"	 { return Compiler::Parser::make_OPERATOR_MULT(*loc); }
+"/"	 { return Compiler::Parser::make_OPERATOR_DIV(*loc); }
+"%"	 { return Compiler::Parser::make_OPERATOR_MOD(*loc); }
+":=" { return Compiler::Parser::make_OPERATOR_ASSIGN(*loc); }
 
-"="  { return Compiler::Parser::make_COND_EQ(Compiler::location()); }
-"<>" { return Compiler::Parser::make_COND_NEQ(Compiler::location()); }
-"<"  { return Compiler::Parser::make_COND_LESS(Compiler::location()); }
-">"  { return Compiler::Parser::make_COND_GREATER(Compiler::location()); }
-"<=" { return Compiler::Parser::make_COND_LEQ(Compiler::location()); }
-">=" { return Compiler::Parser::make_COND_GEQ(Compiler::location()); }
+"="  { return Compiler::Parser::make_COND_EQ(*loc); }
+"<>" { return Compiler::Parser::make_COND_NEQ(*loc); }
+"<"  { return Compiler::Parser::make_COND_LESS(*loc); }
+">"  { return Compiler::Parser::make_COND_GREATER(*loc); }
+"<=" { return Compiler::Parser::make_COND_LEQ(*loc); }
+">=" { return Compiler::Parser::make_COND_GEQ(*loc); }
 
-";"  { return Compiler::Parser::make_SEMICOLON(Compiler::location()); }
-\n   { loc->lines(); }
-[ \n\t\r] {}
+";"  { return Compiler::Parser::make_SEMICOLON(*loc); }
+\n   { loc->lines(yyleng); loc->step(); }
+[ \n\t\r] { loc->step(); }
 .	{
-    return Compiler::Parser::make_ERROR(Compiler::location());
+    return Compiler::Parser::make_ERROR(*loc);
   }
 
 <COMMENT>")" { BEGIN(INITIAL); }
 <COMMENT>\n {}
 <COMMENT>. {}
-<COMMENT><<EOF>>     { return Compiler::Parser::make_ERROR(Compiler::location()); }
+<COMMENT><<EOF>>     { return Compiler::Parser::make_ERROR(*loc); }
 
 <<EOF>>     { return yyterminate(); }
 %%
