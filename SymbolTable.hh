@@ -30,6 +30,8 @@ class SymbolTable {
   long long int lastTempSymbol;
 
 public:
+  mpz_class FIRSTFREEADDRESS = 8;
+
   mpz_class MUL_TEMP1 = 1;
   mpz_class MUL_TEMP2 = 2;
   mpz_class DIV_TEMP = 3;
@@ -39,7 +41,6 @@ public:
 
 
   SymbolTable();
-  //~SymbolTable();
 
   void allocateSymbols();
   void allocateTempSymbols();

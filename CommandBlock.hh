@@ -29,7 +29,6 @@ public:
 
   CommandBlock();
   CommandBlock(SymbolTable* symbolTable);
-  //~CommandBlock();
 
   void pushCommand(Command cmd);
   void pushCommandSet(CommandSet cmds);

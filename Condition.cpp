@@ -1,13 +1,19 @@
 #include "Condition.hh"
 #include <utility>
 
+/**
+ Generates a command block for a given condition and true/false
+ command blocks (used for branching and loops)
+**/
 std::vector<Command> Condition::getCommandBlock(SymbolTable* symbolTable,
   LabelManager* labelManager,
   CommandBlock& trueBlock,
   CommandBlock& falseBlock){
 
+  // simplify all condition types to <= and =
   if (condition == CondType::GreaterEqual){
     // replace with equivalent
+    // a >= b <=> a > b-1
     if (rhs.type == ValueType::VConstant){
       if (rhs.number <= 0){
         // always true
@@ -80,7 +86,6 @@ std::vector<Command> Condition::getCommandBlock(SymbolTable* symbolTable,
       std::string trueLabel = labelManager->nextLabel("true_block");
       std::string endLabel = labelManager->nextLabel("end");
       std::string falseLabel = labelManager->nextLabel("false_block");
-      //commands.push_back(Command(CommandType::AssignSub, new AddrVariable(tempSymbol), new UnparsedValue(lhs), new UnparsedValue(rhs)));
       if (trueBlockPresent){
         commands.push_back(Command(CommandType::JumpZero, new UnparsedValue(lhs), new AddrLabel(trueLabel)));
       } else {

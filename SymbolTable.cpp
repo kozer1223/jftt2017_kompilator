@@ -3,12 +3,12 @@
 #include <sstream>
 
 SymbolTable::SymbolTable(){
-  lastFreeAddress = 10; // reserve extra space
+  lastFreeAddress = FIRSTFREEADDRESS; // reserve space for temp variables
   lastTempSymbol = 1;
 }
 
 void SymbolTable::allocateSymbols(){
-  lastFreeAddress = 10;
+  lastFreeAddress = FIRSTFREEADDRESS;
   for (auto symbol : symbol_list) {
     struct Symbol& symbolData = symbol_map[symbol];
     symbolData.address = lastFreeAddress;
@@ -237,6 +237,9 @@ void SymbolTable::printSymbolData(std::string symbol){
   }
 }
 
+/**
+ Generate assembly code for generating a constant.
+**/
 AssemblyCode SymbolTable::constantCode(mpz_class number){
   mpz_class addr = getConstant(number);
   AssemblyCode code;
@@ -255,6 +258,9 @@ AssemblyCode SymbolTable::constantCode(mpz_class number){
   return code;
 }
 
+/**
+ Generate assembly code to generate all constants.
+**/
 AssemblyCode SymbolTable::generateConstantsCode(){
   AssemblyCode code;
   for(auto constant : constants){

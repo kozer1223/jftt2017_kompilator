@@ -145,10 +145,12 @@ using namespace Compiler;
 program: /*empty*/
 | VAR vdeclarations
 {
+		// allocate all declared symbols
     driver.symbolTable.allocateSymbols();
+		/* //DEBUG
     for(auto symbol : driver.symbolTable.getSymbols()){
       driver.symbolTable.printSymbolData(symbol);
-    }
+    }*/
 }
 PBEGIN commands END
 {
@@ -164,7 +166,6 @@ vdeclarations: /*empty*/
 		Compiler::Parser::error(*(scanner.loc), errMessage.str()); return 1;
   }
   driver.symbolTable.addSymbol($2);
-  //driver.symbolTable.printSymbolData($2);
 }
 | vdeclarations PIDENTIFIER LBRACKET NUMBER RBRACKET
 {
@@ -175,25 +176,18 @@ vdeclarations: /*empty*/
   }
 	mpz_class size($4);
   driver.symbolTable.addArraySymbol($2, size);
-  //driver.symbolTable.printSymbolData($2);
 }
 ;
 commands:
   commands command
 {
-	//cout << "new" << endl;
-  //cout << $1 << endl;
   $1.pushCommandSet($2);
 	$$ = $1;
-  //cout << "INSERTED" << endl;
-  //cout << $2 << endl;
-  //delete $2;
 }
 | command
 {
   $$.globalSymbolTable = &driver.symbolTable;
   $$.pushCommandSet($1);
-  //delete $1;
 }
 ;
 command:
@@ -216,29 +210,23 @@ command:
 | IF condition THEN commands ELSE commands ENDIF
 {
   std::vector<Command> conditionCommands;
-  //cout << "PRE IF" << endl;
   conditionCommands = $2.getCommandBlock(&driver.symbolTable, &driver.labelManager, $4, $6);
-  //cout << "CREATED COMMANDS" << endl;
-  //delete $2;
   $$ = CommandSet(conditionCommands);
-  //cout << "CREATED COMMANDSET" << endl;
-  //cout << *$$ << endl;
 }
 | IF condition THEN commands ENDIF
 {
   std::vector<Command> conditionCommands;
   conditionCommands = $2.getCommandBlock(&driver.symbolTable, &driver.labelManager, $4);
-  //delete $2;
   $$ = CommandSet(conditionCommands);
 }
 | WHILE condition DO commands ENDWHILE
 {
   std::vector<Command> conditionCommands;
+	// generate while loop
 	string loopLabel = driver.labelManager.nextLabel("loop");
 	$4.pushCommand(Command(CommandType::Jump, new AddrLabel(loopLabel)));
   conditionCommands = $2.getCommandBlock(&driver.symbolTable, &driver.labelManager, $4);
 	conditionCommands.insert(conditionCommands.begin(), Command(CommandType::Label, new AddrLabel(loopLabel)));
-  //delete $2;
   $$ = CommandSet(conditionCommands);
 }
 | FOR PIDENTIFIER FROM value TO value
@@ -256,9 +244,10 @@ command:
 }
 DO commands ENDFOR
 {
+	// generate for loop
 	std::vector<Command> preambleCommands;
 	std::vector<Command> conditionCommands;
-	//string iteratorIdentifier = $2;
+
 	// iterator = value1
 	auto c1addr1 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier($2)));
 	auto c1addr2 = std::shared_ptr<IAddress>(std::make_shared<UnparsedValue>($4));
@@ -299,7 +288,7 @@ DO commands ENDFOR
 	$9.pushCommand(Command(CommandType::Jump, new AddrLabel(loopLabel)));
   conditionCommands = greater.getCommandBlock(&driver.symbolTable, &driver.labelManager, $9);
 	conditionCommands.insert(conditionCommands.begin(), Command(CommandType::Label, new AddrLabel(loopLabel)));
-  //delete $2;
+
 	preambleCommands.insert(preambleCommands.end(), conditionCommands.begin(), conditionCommands.end());
   $$ = CommandSet(preambleCommands);
 
@@ -320,9 +309,10 @@ DO commands ENDFOR
 }
 DO commands ENDFOR
 {
+	// generate for loop
 	std::vector<Command> preambleCommands;
 	std::vector<Command> conditionCommands;
-	//string iteratorIdentifier = $2;
+
 	// iterator = value1
 	auto c1addr1 = std::shared_ptr<IAddress>(std::make_shared<UnparsedIdentifier>(Identifier($2)));
 	auto c1addr2 = std::shared_ptr<IAddress>(std::make_shared<UnparsedValue>($4));
@@ -363,7 +353,7 @@ DO commands ENDFOR
 	$9.pushCommand(Command(CommandType::Jump, new AddrLabel(loopLabel)));
   conditionCommands = greater.getCommandBlock(&driver.symbolTable, &driver.labelManager, $9);
 	conditionCommands.insert(conditionCommands.begin(), Command(CommandType::Label, new AddrLabel(loopLabel)));
-  //delete $2;
+
 	preambleCommands.insert(preambleCommands.end(), conditionCommands.begin(), conditionCommands.end());
   $$ = CommandSet(preambleCommands);
 

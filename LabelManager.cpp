@@ -8,6 +8,9 @@ LabelManager::LabelManager(){
 
 LabelManager::~LabelManager(){}
 
+/**
+ Generates a new, unique label with a given infix (for debug purposes).
+**/
 std::string LabelManager::nextLabel(std::string infix){
   std::stringstream ss;
   ss << "LABEL_";

@@ -210,7 +210,6 @@ std::shared_ptr<IAddress> parseAddress(std::shared_ptr<IAddress> addr, std::vect
     } else if (addr->isUnparsedValue()){
       Value val = ((UnparsedValue*)addr.get())->value;
       if (val.type == ValueType::VIdentifier){
-        // TODO: check for arrays
         Identifier identifier = val.identifier;
         if (identifier.isArray){
           // arrays

@@ -19,15 +19,11 @@ public:
     void compile();
 
 private:
-    unsigned int cur_location;
     Scanner scanner;
     Parser parser;
     SymbolTable symbolTable;
     LabelManager labelManager;
     CommandBlock program;
-
-    void setLocation(unsigned int location);
-    unsigned int location();
 };
 
 }
