@@ -1,4 +1,4 @@
-%skeleton "lalr1.cc" /* -*- C++ -*- */
+%skeleton "lalr1.cc" // C++
 %require "3.0"
 %defines
 %define parser_class_name { Parser }
