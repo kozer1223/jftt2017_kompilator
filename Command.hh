@@ -59,7 +59,7 @@ public:
 class AddrVariable : public IAddress {
 public:
   std::string symbol;
-  virtual mpz_class getAddress(SymbolTable*);
+  mpz_class getAddress(SymbolTable*);
 
   AddrVariable(std::string symbol);
   ~AddrVariable();
@@ -69,7 +69,7 @@ public:
 class AddrConstant : public IAddress {
 public:
   mpz_class value;
-  virtual mpz_class getAddress(SymbolTable*);
+  mpz_class getAddress(SymbolTable*);
 
   AddrConstant(mpz_class value);
   ~AddrConstant();
@@ -81,7 +81,7 @@ public:
 class AddrPointer : public IAddress {
 public:
   std::string symbol;
-  virtual mpz_class getAddress(SymbolTable*);
+  mpz_class getAddress(SymbolTable*);
 
   AddrPointer(std::string symbol);
   ~AddrPointer();
@@ -92,7 +92,7 @@ public:
 class AddrLabel : public IAddress {
 public:
   std::string label;
-  virtual mpz_class getAddress(SymbolTable*);
+  mpz_class getAddress(SymbolTable*);
 
   AddrLabel(std::string label);
   ~AddrLabel();

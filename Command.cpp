@@ -22,11 +22,15 @@ mpz_class IAddress::constValue(){
   return -1;
 }
 
+mpz_class IAddress::getAddress(SymbolTable* symTab){
+  return -1;
+}
+
 mpz_class UnparsedIdentifier::getAddress(SymbolTable* symTab){
   return -1;
 }
 
-UnparsedIdentifier::~UnparsedIdentifier(){}
+UnparsedIdentifier::~UnparsedIdentifier(){};
 
 bool UnparsedIdentifier::isUnparsedIdentifier(){
   return true;
@@ -40,7 +44,7 @@ mpz_class UnparsedValue::getAddress(SymbolTable* symTab){
   return -1;
 }
 
-UnparsedValue::~UnparsedValue(){}
+UnparsedValue::~UnparsedValue(){};
 
 bool UnparsedValue::isUnparsedIdentifier(){
   return false;
@@ -54,7 +58,7 @@ AddrVariable::AddrVariable(std::string s){
   symbol = s;
 }
 
-AddrVariable::~AddrVariable(){}
+AddrVariable::~AddrVariable(){};
 
 AddrConstant::AddrConstant(mpz_class val){
   value = val;
@@ -74,7 +78,7 @@ AddrPointer::AddrPointer(std::string s){
   symbol = s;
 }
 
-AddrPointer::~AddrPointer(){}
+AddrPointer::~AddrPointer(){};
 
 bool AddrPointer::isPointer(){
   return true;
@@ -84,7 +88,7 @@ AddrLabel::AddrLabel(std::string l){
   label = l;
 }
 
-AddrLabel::~AddrLabel(){}
+AddrLabel::~AddrLabel(){};
 
 mpz_class AddrVariable::getAddress(SymbolTable* symTab){
   return symTab->getSymbol(symbol);
@@ -179,8 +183,7 @@ Command::Command(CommandType cmd, Value val){
   command = cmd;
 }
 
-Command::~Command(){
-}
+Command::~Command(){}
 
 std::shared_ptr<IAddress> parseAddress(std::shared_ptr<IAddress> addr, std::vector<Command> & commands, SymbolTable* st){
   if (addr != nullptr){

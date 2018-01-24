@@ -811,7 +811,7 @@ AssemblyCode CommandBlock::getAssembly(LabelManager* labelManager){
     // new register state
     registerState = cmd.postCommandRegisterState();
     // add store instruction only when necessary (register needs to change)
-    if (iter == commands.end()){
+    if (std::next(iter) == commands.end()){
       // store before end
       if (modified && registerAddress != -1){
         if (isPointer){
@@ -904,6 +904,7 @@ std::string CommandBlock::postBlockRegisterState() const{
   }
 }
 
+// FOR DEBUG PURPOSES
 std::ostream& operator<<(std::ostream &strm, const CommandBlock &a) {
   strm << "LABELS: ";
   for (auto & label : a.labels){

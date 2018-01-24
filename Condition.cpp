@@ -8,12 +8,30 @@ std::vector<Command> Condition::getCommandBlock(SymbolTable* symbolTable,
 
   if (condition == CondType::GreaterEqual){
     // replace with equivalent
-    condition = CondType::LessEqual;
-    std::swap(lhs, rhs);
+    if (rhs.type == ValueType::VConstant){
+      if (rhs.number <= 0){
+        // always true
+        if (!trueBlock.commands.empty()){
+          std::vector<Command> commands;
+          commands.insert(commands.end(), trueBlock.commands.begin(), trueBlock.commands.end());
+          return commands;
+        } else {
+          return std::vector<Command>();
+        }
+      } else {
+        rhs.number--;
+        std::swap(trueBlock, falseBlock);
+        condition = CondType::LessEqual;
+      }
+    } else {
+      condition = CondType::LessEqual;
+      std::swap(lhs, rhs);
+    }
   } else if (condition == CondType::Greater) {
     std::swap(trueBlock, falseBlock);
     condition = CondType::LessEqual;
   } else if (condition == CondType::Less) {
+    // a < b <=> not(b <= a)
     std::swap(lhs, rhs);
     std::swap(trueBlock, falseBlock);
     condition = CondType::LessEqual;

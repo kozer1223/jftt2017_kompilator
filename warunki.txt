@@ -44,7 +44,7 @@ a >= b równoważne a > b-1, dla b = 0 zawsze true
 
 równoważne z b > a dla a,b - symbole
 dla b = const
-a > b równoważne a >= b+1
+a < b równoważne z a <= b-1, dla b = 0 zawsze false
 
 4) a > b
 (negacja a <= b)

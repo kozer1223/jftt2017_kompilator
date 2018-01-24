@@ -49,9 +49,11 @@ void CompilerDriver::compile(){
 	}
 	symbolTable.addConstants(constants);
 	symbolTable.allocateConstants();
+    cerr << "Allocated constants" << endl;
 
 	p = &program;
 	AssemblyCode code = symbolTable.generateConstantsCode();
+    cerr << "Constants code generated" << endl;
 	while(p != nullptr){
 		//cout << "BLOCK" << endl;
 		//for(std::string lbl : p->labels){
@@ -59,10 +61,15 @@ void CompilerDriver::compile(){
 		//}
 		//cout << endl;
 		//cout << *p << endl;
+		//cerr << *p;
 		AssemblyCode block = p->getAssembly(&labelManager);
+		//cerr << "---x" << endl;
 		code.pushCode(block);
+		//cerr << "---y" << endl;
 		p = p->nextBlock.get();
+		//cerr << "---z" << endl;
 	}
+    cerr << "Code generated" << endl;
 	cout << code.toString();
 }
 

@@ -8,6 +8,8 @@
 #include <gmp.h>
 #include <gmpxx.h>
 
+//#include <iostream>
+
 enum class AsmInstruction {
   Get,
   Put,
@@ -108,6 +110,7 @@ inline void AssemblyCode::pushInstruction(AsmInstruction in) {
   std::stringstream ss;
   ss << instructionCode(in);
   instructionSet.push_back(ss.str());
+  //std::cerr << ss.str() << std::endl;
 }
 
 inline void AssemblyCode::pushInstruction(AsmInstruction in, mpz_class n) {
@@ -116,6 +119,7 @@ inline void AssemblyCode::pushInstruction(AsmInstruction in, mpz_class n) {
   ss << " ";
   ss << n;
   instructionSet.push_back(ss.str());
+  //std::cerr << ss.str() << std::endl;
 }
 
 inline void AssemblyCode::pushInstruction(AsmInstruction in, std::string label) {
@@ -124,6 +128,7 @@ inline void AssemblyCode::pushInstruction(AsmInstruction in, std::string label) 
   ss << " *";
   ss << label;
   instructionSet.push_back(ss.str());
+  //std::cerr << ss.str() << std::endl;
 }
 
 inline void AssemblyCode::addBlockLabel(std::string label){
