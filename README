@@ -10,7 +10,7 @@ Autor: Kacper Kozerski
 2) Kompilacja kompilatora za pomocą komendy make
 
 ## Sposób użycia
-    ./compiler <input >output
+    ./compiler <input_code_filename >output_code_filename
 Błędy wyrzucane są na stderr.
 
 ## Wersje użytych programów i bibliotek
@@ -21,4 +21,7 @@ Błędy wyrzucane są na stderr.
 
 ## Interperter
 Do kompilatora w folderze interpreter załączony jest interpreter
-języka maszyny rejestrowej autorstwa dr Macieja Gębali.
+języka maszyny rejestrowej autorstwa dra Macieja Gębali.
+
+## Testy
+Przykładowe testowe programy znajdują się w folderze tests.
