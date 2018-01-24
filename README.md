@@ -6,7 +6,7 @@ Autor: Kacper Kozerski
  - `g++`
  - `bison`
  - `flex`
- - biblioteka `GMP` dla `C++``
+ - biblioteka `GMP` dla `C++`
 2) Kompilacja kompilatora za pomocą komendy `make`
 
 ## Sposób użycia
